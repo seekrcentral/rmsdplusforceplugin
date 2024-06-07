@@ -31,7 +31,7 @@ ENDIF(${CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT})
 
 # The source is organized into subdirectories, but we handle them all from
 # this CMakeLists file rather than letting CMake visit them as SUBDIRS.
-SET(RMSDPLUSFORCE_PLUGIN_SOURCE_SUBDIRS openmmapi serialization)
+SET(RMSDPLUSFORCEPLUGIN_SOURCE_SUBDIRS openmmapi serialization)
 
 # Set the library name
 SET(RMSDPLUSFORCE_LIBRARY_NAME RMSDPlusForcePlugin)
@@ -50,7 +50,7 @@ ENDFOREACH(dir)
 # Collect up source files
 SET(SOURCE_FILES) # empty
 SET(SOURCE_INCLUDE_FILES)
-FOREACH(subdir ${RMSDPLUSFORCE_PLUGIN_SOURCE_SUBDIRS})
+FOREACH(subdir ${RMSDPLUSFORCEPLUGIN_SOURCE_SUBDIRS})
     FILE(GLOB src_files  ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/src/*.cpp)
     FILE(GLOB incl_files ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/src/*.h)
     SET(SOURCE_FILES         ${SOURCE_FILES}         ${src_files})   #append

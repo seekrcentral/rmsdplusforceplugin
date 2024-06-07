@@ -1,5 +1,5 @@
 set(WRAP_FILE RMSDPlusForcePluginWrapper.cpp)
-set(MODULE_NAME rmsdpusforceplugin)
+set(MODULE_NAME rmsdplusforceplugin)
 
 # Execute SWIG to generate source code for the Python module.
 

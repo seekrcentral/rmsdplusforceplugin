@@ -75,7 +75,7 @@ void testSerialization() {
 
 int main() {
     try {
-        registerRMSDPlusSerializationProxies();
+        registerRMSDPlusForceSerializationProxies();
         testSerialization();
     }
     catch(const exception& e) {

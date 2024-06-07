@@ -1,5 +1,5 @@
-#ifndef OPENMM_RMSD_PLUS_FORCE_PROXY_H_
-#define OPENMM_RMSD_PLUS_FORCE_PROXY_H_
+#ifndef OPENMM_RMSDPLUSFORCE_PROXY_H_
+#define OPENMM_RMSDPLUSFORCE_PROXY_H_
 
 /* -------------------------------------------------------------------------- *
  *                                OpenMMRMSDPlusForce                         *
@@ -41,7 +41,7 @@ namespace OpenMM {
  * This is a proxy for serializing RMSDPlusForce objects.
  */
 
-class OPENMM_EXPORT_RMSD_PLUS_FORCE RMSDPlusForceProxy : public SerializationProxy {
+class OPENMM_EXPORT_RMSDPLUSFORCE RMSDPlusForceProxy : public SerializationProxy {
 public:
     RMSDPlusForceProxy();
     void serialize(const void* object, SerializationNode& node) const;
@@ -50,4 +50,4 @@ public:
 
 } // namespace OpenMM
 
-#endif /*OPENMM_RMSD_PLUS_FORCE_PROXY_H_*/
+#endif /*OPENMM_RMSDPLUSFORCE_PROXY_H_*/

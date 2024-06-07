@@ -44,7 +44,7 @@
 
 #if defined(WIN32)
     #include <windows.h>
-    extern "C" OPENMM_EXPORT_RMSD_PLUS_FORCE void registerRMSDPlusForceSerializationProxies();
+    extern "C" OPENMM_EXPORT_RMSDPLUSFORCE void registerRMSDPlusForceSerializationProxies();
     BOOL WINAPI DllMain(HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved) {
         if (ul_reason_for_call == DLL_PROCESS_ATTACH)
             registerRMSDPlusForceSerializationProxies();
@@ -57,6 +57,6 @@
 using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
 
-extern "C" OPENMM_EXPORT_RMSD_PLUS_FORCE void registerRMSDPlusForceSerializationProxies() {
+extern "C" OPENMM_EXPORT_RMSDPLUSFORCE void registerRMSDPlusForceSerializationProxies() {
     SerializationProxy::registerProxy(typeid(RMSDPlusForce), new RMSDPlusForceProxy());
 }

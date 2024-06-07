@@ -5,9 +5,9 @@
 # Collect up information about the version of the OpenMM library we're building
 # and make it available to the code so it can be built into the binaries.
 
-SET(OPENMMRMSDPLUSREFERENCE_LIBRARY_NAME RMSDPlusForcePluginReference)
+SET(OPENMM_RMSDPLUSFORCE_REFERENCE_LIBRARY_NAME RMSDPlusForcePluginReference)
 
-SET(SHARED_TARGET ${OPENMMRMSDPLUSREFERENCE_LIBRARY_NAME})
+SET(SHARED_TARGET ${OPENMM_RMSDPLUSFORCE_REFERENCE_LIBRARY_NAME})
 
 
 # These are all the places to search for header files which are
