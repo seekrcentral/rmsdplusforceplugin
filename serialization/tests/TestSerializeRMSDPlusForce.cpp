@@ -1,8 +1,5 @@
-#ifndef RMSDPLUSFORCE_KERNELS_H_
-#define RMSDPLUSFORCE_KERNELS_H_
-
 /* -------------------------------------------------------------------------- *
- *                                   OpenMM                                   *
+ *                                OpenMMExample                                 *
  * -------------------------------------------------------------------------- *
  * This is part of the OpenMM molecular simulation toolkit originating from   *
  * Simbios, the NIH National Center for Physics-Based Simulation of           *
@@ -33,48 +30,58 @@
  * -------------------------------------------------------------------------- */
 
 #include "RMSDPlusForce.h"
-#include "openmm/KernelImpl.h"
 #include "openmm/Platform.h"
-#include "openmm/System.h"
-#include <string>
+#include "openmm/internal/AssertionUtilities.h"
+#include "openmm/serialization/XmlSerializer.h"
+#include <iostream>
+#include <sstream>
 
-namespace RMSDPlusForcePlugin {
+using namespace RMSDPlusForcePlugin;
+using namespace OpenMM;
+using namespace std;
 
-/**
- * This kernel is invoked by RMSDPlusForce to calculate the forces acting on the system and the energy of the system.
- */
-class CalcRMSDPlusForceKernel : public OpenMM::KernelImpl {
-public:
-    static std::string Name() {
-        return "CalcRMSDPlusForce";
+extern "C" void registerRMSDPlusForceSerializationProxies();
+
+void testSerialization() {
+    // Create a Force.
+
+    RMSDPlusForce force;
+    force.addBond(0, 1, 1.0, 2.0);
+    force.addBond(0, 2, 2.0, 2.1);
+    force.addBond(2, 3, 3.0, 2.2);
+    force.addBond(5, 1, 4.0, 2.3);
+
+    // Serialize and then deserialize it.
+
+    stringstream buffer;
+    XmlSerializer::serialize<RMSDPlusForce>(&force, "Force", buffer);
+    RMSDPlusForce* copy = XmlSerializer::deserialize<RMSDPlusForce>(buffer);
+
+    // Compare the two forces to see if they are identical.
+
+    RMSDPlusForce& force2 = *copy;
+    ASSERT_EQUAL(force.getNumBonds(), force2.getNumBonds());
+    for (int i = 0; i < force.getNumBonds(); i++) {
+        int a1, a2, b1, b2;
+        double da, db, ka, kb;
+        force.getBondParameters(i, a1, a2, da, ka);
+        force2.getBondParameters(i, b1, b2, db, kb);
+        ASSERT_EQUAL(a1, b1);
+        ASSERT_EQUAL(a2, b2);
+        ASSERT_EQUAL(da, db);
+        ASSERT_EQUAL(ka, kb);
     }
-    CalcRMSDPlusForceKernel(std::string name, const OpenMM::Platform& platform) : OpenMM::KernelImpl(name, platform) {
+}
+
+int main() {
+    try {
+        registerRMSDPlusSerializationProxies();
+        testSerialization();
     }
-    /**
-     * Initialize the kernel.
-     * 
-     * @param system     the System this kernel will be applied to
-     * @param force      the RMSDPlusForce this kernel will be used for
-     */
-    virtual void initialize(const OpenMM::System& system, const RMSDPlusForce& force) = 0;
-    /**
-     * Execute the kernel to calculate the forces and/or energy.
-     *
-     * @param context        the context in which to execute this kernel
-     * @param includeForces  true if forces should be calculated
-     * @param includeEnergy  true if the energy should be calculated
-     * @return the potential energy due to the force
-     */
-    virtual double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy) = 0;
-    /**
-     * Copy changed parameters over to a context.
-     *
-     * @param context    the context to copy parameters to
-     * @param force      the RMSDPlusForce to copy the parameters from
-     */
-    virtual void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force) = 0;
-};
-
-} // namespace RMSDPlusForcePlugin
-
-#endif /*RMSDPLUSFORCE_KERNELS_H_*/
+    catch(const exception& e) {
+        cout << "exception: " << e.what() << endl;
+        return 1;
+    }
+    cout << "Done" << endl;
+    return 0;
+}

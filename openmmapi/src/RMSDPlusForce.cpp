@@ -1,6 +1,3 @@
-#ifndef RMSDPLUSFORCE_KERNELS_H_
-#define RMSDPLUSFORCE_KERNELS_H_
-
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
  * -------------------------------------------------------------------------- *
@@ -33,48 +30,42 @@
  * -------------------------------------------------------------------------- */
 
 #include "RMSDPlusForce.h"
-#include "openmm/KernelImpl.h"
-#include "openmm/Platform.h"
-#include "openmm/System.h"
-#include <string>
+#include "internal/RMSDPlusForceImpl.h"
+#include "openmm/OpenMMException.h"
+#include "openmm/internal/AssertionUtilities.h"
 
-namespace RMSDPlusForcePlugin {
+using namespace RMSDPlusForcePlugin;
+using namespace OpenMM;
+using namespace std;
 
-/**
- * This kernel is invoked by RMSDPlusForce to calculate the forces acting on the system and the energy of the system.
- */
-class CalcRMSDPlusForceKernel : public OpenMM::KernelImpl {
-public:
-    static std::string Name() {
-        return "CalcRMSDPlusForce";
-    }
-    CalcRMSDPlusForceKernel(std::string name, const OpenMM::Platform& platform) : OpenMM::KernelImpl(name, platform) {
-    }
-    /**
-     * Initialize the kernel.
-     * 
-     * @param system     the System this kernel will be applied to
-     * @param force      the RMSDPlusForce this kernel will be used for
-     */
-    virtual void initialize(const OpenMM::System& system, const RMSDPlusForce& force) = 0;
-    /**
-     * Execute the kernel to calculate the forces and/or energy.
-     *
-     * @param context        the context in which to execute this kernel
-     * @param includeForces  true if forces should be calculated
-     * @param includeEnergy  true if the energy should be calculated
-     * @return the potential energy due to the force
-     */
-    virtual double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy) = 0;
-    /**
-     * Copy changed parameters over to a context.
-     *
-     * @param context    the context to copy parameters to
-     * @param force      the RMSDPlusForce to copy the parameters from
-     */
-    virtual void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force) = 0;
-};
+RMSDPlusForce::RMSDPlusForce() {
+}
 
-} // namespace RMSDPlusForcePlugin
+int RMSDPlusForce::addBond(int particle1, int particle2, double length, double k) {
+    bonds.push_back(BondInfo(particle1, particle2, length, k));
+    return bonds.size()-1;
+}
 
-#endif /*RMSDPLUSFORCE_KERNELS_H_*/
+void RMSDPlusForce::getBondParameters(int index, int& particle1, int& particle2, double& length, double& k) const {
+    ASSERT_VALID_INDEX(index, bonds);
+    particle1 = bonds[index].particle1;
+    particle2 = bonds[index].particle2;
+    length = bonds[index].length;
+    k = bonds[index].k;
+}
+
+void RMSDPlusForce::setBondParameters(int index, int particle1, int particle2, double length, double k) {
+    ASSERT_VALID_INDEX(index, bonds);
+    bonds[index].particle1 = particle1;
+    bonds[index].particle2 = particle2;
+    bonds[index].length = length;
+    bonds[index].k = k;
+}
+
+ForceImpl* RMSDPlusForce::createImpl() const {
+    return new RMSDPlusForceImpl(*this);
+}
+
+void RMSDPlusForce::updateParametersInContext(Context& context) {
+    dynamic_cast<RMSDPlusForceImpl&>(getImplInContext(context)).updateParametersInContext(getContextImpl(context));
+}

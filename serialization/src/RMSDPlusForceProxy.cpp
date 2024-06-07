@@ -1,8 +1,5 @@
-#ifndef RMSDPLUSFORCE_KERNELS_H_
-#define RMSDPLUSFORCE_KERNELS_H_
-
 /* -------------------------------------------------------------------------- *
- *                                   OpenMM                                   *
+ *                                OpenMMExample                                 *
  * -------------------------------------------------------------------------- *
  * This is part of the OpenMM molecular simulation toolkit originating from   *
  * Simbios, the NIH National Center for Physics-Based Simulation of           *
@@ -32,49 +29,44 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
+#include "RMSDPlusForceProxy.h"
 #include "RMSDPlusForce.h"
-#include "openmm/KernelImpl.h"
-#include "openmm/Platform.h"
-#include "openmm/System.h"
-#include <string>
+#include "openmm/serialization/SerializationNode.h"
+#include <sstream>
 
-namespace RMSDPlusForcePlugin {
+using namespace RMSDPlusForcePlugin;
+using namespace OpenMM;
+using namespace std;
 
-/**
- * This kernel is invoked by RMSDPlusForce to calculate the forces acting on the system and the energy of the system.
- */
-class CalcRMSDPlusForceKernel : public OpenMM::KernelImpl {
-public:
-    static std::string Name() {
-        return "CalcRMSDPlusForce";
+RMSDPlusForceProxy::RMSDPlusForceProxy() : SerializationProxy("RMSDPlusForce") {
+}
+
+void RMSDPlusForceProxy::serialize(const void* object, SerializationNode& node) const {
+    node.setIntProperty("version", 1);
+    const RMSDPlusForce& force = *reinterpret_cast<const RMSDPlusForce*>(object);
+    SerializationNode& bonds = node.createChildNode("Bonds");
+    for (int i = 0; i < force.getNumBonds(); i++) {
+        int particle1, particle2;
+        double distance, k;
+        force.getBondParameters(i, particle1, particle2, distance, k);
+        bonds.createChildNode("Bond").setIntProperty("p1", particle1).setIntProperty("p2", particle2).setDoubleProperty("d", distance).setDoubleProperty("k", k);
     }
-    CalcRMSDPlusForceKernel(std::string name, const OpenMM::Platform& platform) : OpenMM::KernelImpl(name, platform) {
+}
+
+void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
+    if (node.getIntProperty("version") != 1)
+        throw OpenMMException("Unsupported version number");
+    RMSDPlusForce* force = new RMSDPlusForce();
+    try {
+        const SerializationNode& bonds = node.getChildNode("Bonds");
+        for (int i = 0; i < (int) bonds.getChildren().size(); i++) {
+            const SerializationNode& bond = bonds.getChildren()[i];
+            force->addBond(bond.getIntProperty("p1"), bond.getIntProperty("p2"), bond.getDoubleProperty("d"), bond.getDoubleProperty("k"));
+        }
     }
-    /**
-     * Initialize the kernel.
-     * 
-     * @param system     the System this kernel will be applied to
-     * @param force      the RMSDPlusForce this kernel will be used for
-     */
-    virtual void initialize(const OpenMM::System& system, const RMSDPlusForce& force) = 0;
-    /**
-     * Execute the kernel to calculate the forces and/or energy.
-     *
-     * @param context        the context in which to execute this kernel
-     * @param includeForces  true if forces should be calculated
-     * @param includeEnergy  true if the energy should be calculated
-     * @return the potential energy due to the force
-     */
-    virtual double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy) = 0;
-    /**
-     * Copy changed parameters over to a context.
-     *
-     * @param context    the context to copy parameters to
-     * @param force      the RMSDPlusForce to copy the parameters from
-     */
-    virtual void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force) = 0;
-};
-
-} // namespace RMSDPlusForcePlugin
-
-#endif /*RMSDPLUSFORCE_KERNELS_H_*/
+    catch (...) {
+        delete force;
+        throw;
+    }
+    return force;
+}

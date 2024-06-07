@@ -1,5 +1,5 @@
-#ifndef RMSDPLUSFORCE_KERNELS_H_
-#define RMSDPLUSFORCE_KERNELS_H_
+#ifndef COMMON_RMSDPLUS_KERNELS_H_
+#define COMMON_RMSDPLUS_KERNELS_H_
 
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
@@ -9,7 +9,7 @@
  * Biological Structures at Stanford, funded under the NIH Roadmap for        *
  * Medical Research, grant U54 GM072970. See https://simtk.org.               *
  *                                                                            *
- * Portions copyright (c) 2014 Stanford University and the Authors.           *
+ * Portions copyright (c) 2014-2021 Stanford University and the Authors.      *
  * Authors: Peter Eastman                                                     *
  * Contributors:                                                              *
  *                                                                            *
@@ -32,23 +32,19 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
-#include "RMSDPlusForce.h"
-#include "openmm/KernelImpl.h"
-#include "openmm/Platform.h"
-#include "openmm/System.h"
-#include <string>
+#include "RMSDPlusKernels.h"
+#include "openmm/common/ComputeContext.h"
+#include "openmm/common/ComputeArray.h"
 
 namespace RMSDPlusForcePlugin {
 
 /**
  * This kernel is invoked by RMSDPlusForce to calculate the forces acting on the system and the energy of the system.
  */
-class CalcRMSDPlusForceKernel : public OpenMM::KernelImpl {
+class CommonCalcRMSDPlusForceKernel : public CalcRMSDPlusForceKernel {
 public:
-    static std::string Name() {
-        return "CalcRMSDPlusForce";
-    }
-    CalcRMSDPlusForceKernel(std::string name, const OpenMM::Platform& platform) : OpenMM::KernelImpl(name, platform) {
+    CommonCalcRMSDPlusForceKernel(std::string name, const OpenMM::Platform& platform, OpenMM::ComputeContext& cc, const OpenMM::System& system) :
+            CalcRMSDPlusForceKernel(name, platform), hasInitializedKernel(false), cc(cc), system(system) {
     }
     /**
      * Initialize the kernel.
@@ -56,7 +52,7 @@ public:
      * @param system     the System this kernel will be applied to
      * @param force      the RMSDPlusForce this kernel will be used for
      */
-    virtual void initialize(const OpenMM::System& system, const RMSDPlusForce& force) = 0;
+    void initialize(const OpenMM::System& system, const RMSDPlusForce& force);
     /**
      * Execute the kernel to calculate the forces and/or energy.
      *
@@ -65,16 +61,22 @@ public:
      * @param includeEnergy  true if the energy should be calculated
      * @return the potential energy due to the force
      */
-    virtual double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy) = 0;
+    double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy);
     /**
      * Copy changed parameters over to a context.
      *
      * @param context    the context to copy parameters to
      * @param force      the RMSDPlusForce to copy the parameters from
      */
-    virtual void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force) = 0;
+    void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force);
+private:
+    int numBonds;
+    bool hasInitializedKernel;
+    OpenMM::ComputeContext& cc;
+    const OpenMM::System& system;
+    OpenMM::ComputeArray params;
 };
 
 } // namespace RMSDPlusForcePlugin
 
-#endif /*RMSDPLUSFORCE_KERNELS_H_*/
+#endif /*COMMON_RMSDPLUS_KERNELS_H_*/

@@ -35,16 +35,16 @@
 #include "openmm/Context.h"
 #include "openmm/Force.h"
 #include <vector>
-#include "internal/windowsExportRMSDForcePlus.h"
+#include "internal/windowsExportRMSDPlusForce.h"
 
-namespace RMSDForcePlusPlugin {
+namespace RMSDPlusForcePlugin {
 
 /**
  * This class implements a RMSD force that has different selections
  * between the alignment and the RMSD calculation.
  */
 
-class OPENMM_EXPORT_RMSDFORCEPLUS RMSDPlusForce : public OpenMM::Force {
+class OPENMM_EXPORT_RMSDPLUSFORCE RMSDPlusForce : public OpenMM::Force {
 public:
     /**
      * Create an RMSDForce.
@@ -128,6 +128,6 @@ public:
     }
 };
 
-} // namespace RMSDForcePlusPlugin
+} // namespace RMSDPlusForcePlugin
 
 #endif /*OPENMM_RMSDPLUSFORCE_H_*/

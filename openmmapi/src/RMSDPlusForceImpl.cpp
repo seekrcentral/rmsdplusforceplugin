@@ -1,6 +1,3 @@
-#ifndef RMSDPLUSFORCE_KERNELS_H_
-#define RMSDPLUSFORCE_KERNELS_H_
-
 /* -------------------------------------------------------------------------- *
  *                                   OpenMM                                   *
  * -------------------------------------------------------------------------- *
@@ -32,49 +29,55 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
-#include "RMSDPlusForce.h"
-#include "openmm/KernelImpl.h"
-#include "openmm/Platform.h"
-#include "openmm/System.h"
-#include <string>
+#ifdef WIN32
+  #define _USE_MATH_DEFINES // Needed to get M_PI
+#endif
+#include "internal/RMSDPlusForceImpl.h"
+#include "RMSDPlusKernels.h"
+#include "openmm/OpenMMException.h"
+#include "openmm/internal/ContextImpl.h"
+#include <cmath>
+#include <map>
+#include <set>
+#include <sstream>
 
-namespace RMSDPlusForcePlugin {
+using namespace RMSDPlusForcePlugin;
+using namespace OpenMM;
+using namespace std;
 
-/**
- * This kernel is invoked by RMSDPlusForce to calculate the forces acting on the system and the energy of the system.
- */
-class CalcRMSDPlusForceKernel : public OpenMM::KernelImpl {
-public:
-    static std::string Name() {
-        return "CalcRMSDPlusForce";
+RMSDPlusForceImpl::RMSDPlusForceImpl(const RMSDPlusForce& owner) : owner(owner) {
+}
+
+RMSDPlusForceImpl::~RMSDPlusForceImpl() {
+}
+
+void RMSDPlusForceImpl::initialize(ContextImpl& context) {
+    kernel = context.getPlatform().createKernel(CalcRMSDPlusForceKernel::Name(), context);
+    kernel.getAs<CalcRMSDPlusForceKernel>().initialize(context.getSystem(), owner);
+}
+
+double RMSDPlusForceImpl::calcForcesAndEnergy(ContextImpl& context, bool includeForces, bool includeEnergy, int groups) {
+    if ((groups&(1<<owner.getForceGroup())) != 0)
+        return kernel.getAs<CalcRMSDPlusForceKernel>().execute(context, includeForces, includeEnergy);
+    return 0.0;
+}
+
+std::vector<std::string> RMSDPlusForceImpl::getKernelNames() {
+    std::vector<std::string> names;
+    names.push_back(CalcRMSDPlusForceKernel::Name());
+    return names;
+}
+
+vector<pair<int, int> > RMSDPlusForceImpl::getBondedParticles() const {
+    int numBonds = owner.getNumBonds();
+    vector<pair<int, int> > bonds(numBonds);
+    for (int i = 0; i < numBonds; i++) {
+        double length, k;
+        owner.getBondParameters(i, bonds[i].first, bonds[i].second, length, k);
     }
-    CalcRMSDPlusForceKernel(std::string name, const OpenMM::Platform& platform) : OpenMM::KernelImpl(name, platform) {
-    }
-    /**
-     * Initialize the kernel.
-     * 
-     * @param system     the System this kernel will be applied to
-     * @param force      the RMSDPlusForce this kernel will be used for
-     */
-    virtual void initialize(const OpenMM::System& system, const RMSDPlusForce& force) = 0;
-    /**
-     * Execute the kernel to calculate the forces and/or energy.
-     *
-     * @param context        the context in which to execute this kernel
-     * @param includeForces  true if forces should be calculated
-     * @param includeEnergy  true if the energy should be calculated
-     * @return the potential energy due to the force
-     */
-    virtual double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy) = 0;
-    /**
-     * Copy changed parameters over to a context.
-     *
-     * @param context    the context to copy parameters to
-     * @param force      the RMSDPlusForce to copy the parameters from
-     */
-    virtual void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force) = 0;
-};
+    return bonds;
+}
 
-} // namespace RMSDPlusForcePlugin
-
-#endif /*RMSDPLUSFORCE_KERNELS_H_*/
+void RMSDPlusForceImpl::updateParametersInContext(ContextImpl& context) {
+    kernel.getAs<CalcRMSDPlusForceKernel>().copyParametersToContext(context, owner);
+}
