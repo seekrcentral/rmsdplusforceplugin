@@ -47,7 +47,7 @@ namespace RMSDPlusForcePlugin {
 class OPENMM_EXPORT_RMSDPLUSFORCE RMSDPlusForce : public OpenMM::Force {
 public:
     /**
-     * Create an RMSDForce.
+     * Create an RMSDPlusForce.
      */
     RMSDPlusForce();
     /**

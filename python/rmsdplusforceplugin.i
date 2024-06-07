@@ -80,7 +80,7 @@ public:
     %clear double& k;
 
     /*
-     * Add methods for casting a Force to an ExampleForce.
+     * Add methods for casting a Force to an RMSDPlusForce.
     */
     %extend {
         static RMSDPlusForcePlugin::RMSDPlusForce& cast(OpenMM::Force& force) {

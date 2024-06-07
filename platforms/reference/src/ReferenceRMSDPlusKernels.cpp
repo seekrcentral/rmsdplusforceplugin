@@ -89,7 +89,7 @@ double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool incl
 
 void ReferenceCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context, const RMSDPlusForce& force) {
     if (force.getNumBonds() != particle1.size())
-        throw OpenMMException("updateParametersInContext: The number of Example bonds has changed");
+        throw OpenMMException("updateParametersInContext: The number of whatever bonds has changed");
     for (int i = 0; i < force.getNumBonds(); i++) {
         int p1, p2;
         force.getBondParameters(i, p1, p2, length[i], k[i]);

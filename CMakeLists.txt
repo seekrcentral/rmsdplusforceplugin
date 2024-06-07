@@ -1,5 +1,5 @@
 #---------------------------------------------------
-# OpenMM Example Plugin
+# OpenMM RMSDPlusForce Plugin
 #----------------------------------------------------
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.17)
