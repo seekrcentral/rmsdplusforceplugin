@@ -10,9 +10,11 @@
  */
 
 %include "std_vector.i"
+%include "Vec3.h"
 namespace std {
   %template(vectord) vector<double>;
   %template(vectori) vector<int>;
+  %template(vectorv) vector<Vec3>;
 };
 
 %{
@@ -32,11 +34,14 @@ import simtk.unit as unit
 /*
  * Add units to function outputs.
 */
+
+/* TODO: remove
 %pythonappend RMSDPlusForcePlugin::RMSDPlusForce::getBondParameters(int index, int& particle1, int& particle2,
                                                              double& length, double& k) const %{
     val[2] = unit.Quantity(val[2], unit.nanometer)
     val[3] = unit.Quantity(val[3], unit.kilojoule_per_mole/unit.nanometer**4)
 %}
+*/
 
 /*
  * Convert C++ exceptions to Python exceptions.
@@ -55,29 +60,31 @@ namespace RMSDPlusForcePlugin {
 
 class RMSDPlusForce : public OpenMM::Force {
 public:
-    RMSDPlusForce();
+    RMSDPlusForce(std::vector<Vec3> referencePositions, std::vector<int> alignParticles, std::vector<int> rmsdParticles);
 
-    int getNumBonds() const;
-
-    int addBond(int particle1, int particle2, double length, double k);
-
-    void setBondParameters(int index, int particle1, int particle2, double length, double k);
-
+    int getForceGroup() const;
+    
+    std::string getName() const;
+    
+    std::vector<int> getAlignParticles() const;
+    
+    std::vector<int> getRMSDParticles() const;
+    
+    std::vector<Vec3> getReferencePositions() const;
+    
+    void setForceGroup(int group);
+    
+    void setName(std::string name);
+    
+    void setAlignParticles(std::vector<int> particles);
+    
+    void setRMSDParticles(std::vector<int> particles);
+    
+    void setReferencePositions(std::vector<Vec3> positions);
+    
     void updateParametersInContext(OpenMM::Context& context);
-
-    /*
-     * The reference parameters to this function are output values.
-     * Marking them as such will cause swig to return a tuple.
-    */
-    %apply int& OUTPUT {int& particle1};
-    %apply int& OUTPUT {int& particle2};
-    %apply double& OUTPUT {double& length};
-    %apply double& OUTPUT {double& k};
-    void getBondParameters(int index, int& particle1, int& particle2, double& length, double& k) const;
-    %clear int& particle1;
-    %clear int& particle2;
-    %clear double& length;
-    %clear double& k;
+    
+    bool usesPeriodicBoundaryConditions() const;
 
     /*
      * Add methods for casting a Force to an RMSDPlusForce.

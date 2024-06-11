@@ -38,28 +38,24 @@ using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
 using namespace std;
 
-RMSDPlusForce::RMSDPlusForce() {
+RMSDPlusForce::RMSDPlusForce(const vector<Vec3>& referencePositions, 
+                             const vector<int>& alignParticles,
+                             const vector<int>& rmsdParticles) :
+                             referencePositions(referencePositions), 
+                             alignParticles(alignParticles)
+                             rmsdParticles(rmsdParticles) {
 }
 
-int RMSDPlusForce::addBond(int particle1, int particle2, double length, double k) {
-    bonds.push_back(BondInfo(particle1, particle2, length, k));
-    return bonds.size()-1;
+void RMSDPlusForce::setAlignParticles(vector<int>& particles) {
+    alignParticles = particles;
 }
 
-void RMSDPlusForce::getBondParameters(int index, int& particle1, int& particle2, double& length, double& k) const {
-    ASSERT_VALID_INDEX(index, bonds);
-    particle1 = bonds[index].particle1;
-    particle2 = bonds[index].particle2;
-    length = bonds[index].length;
-    k = bonds[index].k;
+void RMSDPlusForce::setRMSDParticles(vector<int>& particles) {
+    rmsdParticles = particles;
 }
 
-void RMSDPlusForce::setBondParameters(int index, int particle1, int particle2, double length, double k) {
-    ASSERT_VALID_INDEX(index, bonds);
-    bonds[index].particle1 = particle1;
-    bonds[index].particle2 = particle2;
-    bonds[index].length = length;
-    bonds[index].k = k;
+void RMSDPlusForce::setReferencePositions(vector<Vec3>& positions) {
+    referencePositions = positions;
 }
 
 ForceImpl* RMSDPlusForce::createImpl() const {

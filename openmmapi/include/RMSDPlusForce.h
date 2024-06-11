@@ -34,6 +34,7 @@
 
 #include "openmm/Context.h"
 #include "openmm/Force.h"
+#include "Vec3.h"
 #include <vector>
 #include "internal/windowsExportRMSDPlusForce.h"
 
@@ -49,83 +50,43 @@ public:
     /**
      * Create an RMSDPlusForce.
      */
-    RMSDPlusForce();
+    RMSDPlusForce(std::vector<Vec3> referencePositions, 
+                  std::vector<int> alignParticles,
+                  std::vector<int> rmsdParticles);
     /**
-     * Get the number of bond stretch terms in the potential function
+     * Get the force group this force belongs to
      */
-    int getNumBonds() const {
-        return bonds.size();
+    
+    std::vector<int> getAlignParticles() const {
+        return alignParticles;
     }
-    /**
-     * Add a bond term to the force.
-     *
-     * @param particle1 the index of the first particle connected by the bond
-     * @param particle2 the index of the second particle connected by the bond
-     * @param length    the equilibrium length of the bond, measured in nm
-     * @param k         the force constant for the bond, measured in kJ/mol/nm^4
-     * @return the index of the bond that was added
-     */
-    int addBond(int particle1, int particle2, double length, double k);
-    /**
-     * Get the force field parameters for a bond term.
-     * 
-     * @param index     the index of the bond for which to get parameters
-     * @param particle1 the index of the first particle connected by the bond
-     * @param particle2 the index of the second particle connected by the bond
-     * @param length    the equilibrium length of the bond, measured in nm
-     * @param k         the harmonic force constant for the bond, measured in kJ/mol/nm^4
-     */
-    void getBondParameters(int index, int& particle1, int& particle2, double& length, double& k) const;
-    /**
-     * Set the force field parameters for a bond term.
-     * 
-     * @param index     the index of the bond for which to set parameters
-     * @param particle1 the index of the first particle connected by the bond
-     * @param particle2 the index of the second particle connected by the bond
-     * @param length    the equilibrium length of the bond, measured in nm
-     * @param k         the harmonic force constant for the bond, measured in kJ/mol/nm^4
-     */
-    void setBondParameters(int index, int particle1, int particle2, double length, double k);
-    /**
-     * Update the per-bond parameters in a Context to match those stored in this Force object.  This method provides
-     * an efficient method to update certain parameters in an existing Context without needing to reinitialize it.
-     * Simply call setBondParameters() to modify this object's parameters, then call updateParametersInState()
-     * to copy them over to the Context.
-     * 
-     * The only information this method updates is the values of per-bond parameters.  The set of particles involved
-     * in a bond cannot be changed, nor can new bonds be added.
-     */
+    
+    std::vector<int> getRMSDParticles() const {
+        return rmsdParticles;
+    }
+    
+    std::vector<Vec3> getReferencePositions() const {
+        return referencePositions
+    }
+    
+    void setAlignParticles(std::vector<int> particles);
+    
+    void setRMSDParticles(std::vector<int> particles);
+    
+    void setReferencePositions(std::vector<Vec3> positions);
+    
     void updateParametersInContext(OpenMM::Context& context);
-    /**
-     * Returns true if the force uses periodic boundary conditions and false otherwise. Your force should implement this
-     * method appropriately to ensure that `System.usesPeriodicBoundaryConditions()` works for all systems containing
-     * your force.
-     */
+    
     bool usesPeriodicBoundaryConditions() const {
         return false;
     }
+    
 protected:
     OpenMM::ForceImpl* createImpl() const;
 private:
-    class BondInfo;
-    std::vector<BondInfo> bonds;
-};
-
-/**
- * This is an internal class used to record information about a bond.
- * @private
- */
-class RMSDPlusForce::BondInfo {
-public:
-    int particle1, particle2;
-    double length, k;
-    BondInfo() {
-        particle1 = particle2 = -1;
-        length = k = 0.0;
-    }
-    BondInfo(int particle1, int particle2, double length, double k) :
-        particle1(particle1), particle2(particle2), length(length), k(k) {
-    }
+    std::vector<Vec3> referencePositions;
+    std::vector<int> alignParticles;
+    std::vector<int> rmsdParticles;
 };
 
 } // namespace RMSDPlusForcePlugin
