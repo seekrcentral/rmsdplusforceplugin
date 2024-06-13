@@ -70,7 +70,7 @@ public:
      */
     void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force);
 private:
-    int numBonds;
+    //int numBonds;
     bool hasInitializedKernel;
     OpenMM::ComputeContext& cc;
     const OpenMM::System& system;

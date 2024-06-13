@@ -35,6 +35,7 @@
 #include "RMSDPlusKernels.h"
 #include "openmm/Platform.h"
 #include <vector>
+#include "openmm/Vec3.h"
 
 namespace RMSDPlusForcePlugin {
 
@@ -69,9 +70,12 @@ public:
      */
     void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force);
 private:
-    int numBonds;
-    std::vector<int> particle1, particle2;
-    std::vector<double> length, k;
+    int numParticlePositions;
+    std::vector<OpenMM::Vec3> referencePositions;
+    int numAlignParticles;
+    std::vector<int> alignParticles;
+    int numRMSDParticles;
+    std::vector<int> rmsdParticles;
 };
 
 } // namespace RMSDPlusForcePlugin

@@ -52,48 +52,60 @@ static vector<RealVec>& extractForces(ContextImpl& context) {
 
 void ReferenceCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDPlusForce& force) {
     // Initialize bond parameters.
+	int numAlignParticles = force.getNumAlignParticles();
+	int numRMSDParticles = force.getNumRMSDParticles();
+	int numReferencePositions = force.getNumReferencePositions();
 
-    int numBonds = force.getNumBonds();
-    particle1.resize(numBonds);
-    particle2.resize(numBonds);
-    length.resize(numBonds);
-    k.resize(numBonds);
-    for (int i = 0; i < numBonds; i++)
-        force.getBondParameters(i, particle1[i], particle2[i], length[i], k[i]);
+    alignParticles.resize(numAlignParticles);
+    rmsdParticles.resize(numRMSDParticles);
+    referencePositions.resize(numReferencePositions);
+    for (int i = 0; i < numAlignParticles; i++)
+    	force.getRMSDPlusAlignParameters(i, alignParticles[i])
+
+	for (int i = 0; i < numRMSDParticles; i++)
+		force.getRMSDPlusRMSDParameters(i, rmsdParticles[i])
+
+	for (int i = 0; i < numRMSDParticles; i++)
+		force.getRMSDPlusReferencePosition(i, referencePositions[i])
+
 }
 
 double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool includeForces, bool includeEnergy) {
     vector<RealVec>& pos = extractPositions(context);
     vector<RealVec>& force = extractForces(context);
-    int numBonds = particle1.size();
     double energy = 0;
 
     // Compute the interactions.
 
-    for (int i = 0; i < numBonds; i++) {
-        int p1 = particle1[i];
-        int p2 = particle2[i];
-        RealVec delta = pos[p1]-pos[p2];
-        RealOpenMM r2 = delta.dot(delta);
-        RealOpenMM r = sqrt(r2);
-        RealOpenMM dr = (r-length[i]);
-        RealOpenMM dr2 = dr*dr;
-        energy += k[i]*dr2*dr2;
-        RealOpenMM dEdR = 4*k[i]*dr2*dr;
-        dEdR = (r > 0) ? (dEdR/r) : 0;
-        force[p1] -= delta*dEdR;
-        force[p2] += delta*dEdR;
-    }
+    // Fill this out later
+
     return energy;
 }
 
 void ReferenceCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context, const RMSDPlusForce& force) {
-    if (force.getNumBonds() != particle1.size())
-        throw OpenMMException("updateParametersInContext: The number of whatever bonds has changed");
-    for (int i = 0; i < force.getNumBonds(); i++) {
-        int p1, p2;
-        force.getBondParameters(i, p1, p2, length[i], k[i]);
-        if (p1 != particle1[i] || p2 != particle2[i])
-            throw OpenMMException("updateParametersInContext: A particle index has changed");
+    if (force.getNumAlignParticles() != alignParticles.size())
+        throw OpenMMException("updateParametersInContext: The number of align particles has changed");
+    if (force.getNumRMSDParticles() != rmsdParticles.size())
+        throw OpenMMException("updateParametersInContext: The number of RMSD particles has changed");
+    if (force.getNumReferencePositions() != referencePositions.size())
+        throw OpenMMException("updateParametersInContext: The number of reference positions has changed");
+    for (int i = 0; i < force.getNumAlignParticles(); i++) {
+        int p1;
+        force.getRMSDPlusAlignParameters(i, p1);
+        if (p1 != alignParticles[i])
+            throw OpenMMException("updateParametersInContext: An align particle index has changed");
     }
+    for (int i = 0; i < force.getNumRMSDParticles(); i++) {
+		int p1;
+		force.getRMSDPlusRMSDParameters(i, p1);
+		if (p1 != rmsdParticles[i])
+			throw OpenMMException("updateParametersInContext: An RMSD particle index has changed");
+	}
+    for (int i = 0; i < force.getNumReferencePositions(); i++) {
+		Vec3 pos;
+		force.getRMSDPlusReferencePosition(i, pos);
+		if (pos != referencePositions[i])
+			throw OpenMMException("updateParametersInContext: A reference position has changed");
+	}
+
 }

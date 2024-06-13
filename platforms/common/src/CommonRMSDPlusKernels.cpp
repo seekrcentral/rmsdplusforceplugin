@@ -44,6 +44,7 @@ class CommonRMSDPlusForceInfo : public ComputeForceInfo {
 public:
     CommonRMSDPlusForceInfo(const RMSDPlusForce& force) : force(force) {
     }
+    /*
     int getNumParticleGroups() {
         return force.getNumBonds();
     }
@@ -62,6 +63,7 @@ public:
         force.getBondParameters(group2, particle1, particle2, length2, k2);
         return (length1 == length2 && k1 == k2);
     }
+    */
 private:
     const RMSDPlusForce& force;
 };
@@ -69,11 +71,10 @@ private:
 void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDPlusForce& force) {
     ContextSelector selector(cc);
     int numContexts = cc.getNumContexts();
-    int startIndex = cc.getContextIndex()*force.getNumBonds()/numContexts;
-    int endIndex = (cc.getContextIndex()+1)*force.getNumBonds()/numContexts;
-    numBonds = endIndex-startIndex;
-    if (numBonds == 0)
-        return;
+    if (numContexts > 1)
+    	throw OpenMMException("CommonCalcRMSDPlusForceKernel::initialize: only one context allowed.");
+
+    /*
     vector<vector<int> > atoms(numBonds, vector<int>(2));
     params.initialize<mm_float2>(cc, numBonds, "bondParams");
     vector<mm_float2> paramVector(numBonds);
@@ -87,6 +88,7 @@ void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDP
     replacements["PARAMS"] = cc.getBondedUtilities().addArgument(params, "float2");
     cc.getBondedUtilities().addInteraction(atoms, cc.replaceStrings(CommonRMSDPlusKernelSources::RMSDPlusForce, replacements), force.getForceGroup());
     cc.addForce(new CommonRMSDPlusForceInfo(force));
+    */
 }
 
 double CommonCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool includeForces, bool includeEnergy) {
@@ -94,7 +96,8 @@ double CommonCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool include
 }
 
 void CommonCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context, const RMSDPlusForce& force) {
-    ContextSelector selector(cc);
+    /*
+	ContextSelector selector(cc);
     int numContexts = cc.getNumContexts();
     int startIndex = cc.getContextIndex()*force.getNumBonds()/numContexts;
     int endIndex = (cc.getContextIndex()+1)*force.getNumBonds()/numContexts;
@@ -117,5 +120,6 @@ void CommonCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context
     // Mark that the current reordering may be invalid.
     
     cc.invalidateMolecules();
+    */
 }
 

@@ -34,7 +34,7 @@
 
 #include "openmm/Context.h"
 #include "openmm/Force.h"
-#include "Vec3.h"
+#include "openmm/Vec3.h"
 #include <vector>
 #include "internal/windowsExportRMSDPlusForce.h"
 
@@ -50,7 +50,7 @@ public:
     /**
      * Create an RMSDPlusForce.
      */
-    RMSDPlusForce(std::vector<Vec3> referencePositions, 
+    RMSDPlusForce(std::vector<OpenMM::Vec3> referencePositions,
                   std::vector<int> alignParticles,
                   std::vector<int> rmsdParticles);
     /**
@@ -65,15 +65,33 @@ public:
         return rmsdParticles;
     }
     
-    std::vector<Vec3> getReferencePositions() const {
-        return referencePositions
+    std::vector<OpenMM::Vec3> getReferencePositions() const {
+        return referencePositions;
     }
     
+    int getNumAlignParticles() const {
+    	return alignParticles.size();
+    }
+
+    int getNumRMSDParticles() const {
+		return rmsdParticles.size();
+	}
+
+    int getNumReferencePositions() const {
+		return referencePositions.size();
+	}
+
+    void getRMSDPlusAlignParameters(int index, int& particle) const;
+
+    void getRMSDPlusRMSDParameters(int index, int& particle) const;
+
+    void getRMSDPlusReferencePosition(int index, OpenMM::Vec3& position) const;
+
     void setAlignParticles(std::vector<int> particles);
     
     void setRMSDParticles(std::vector<int> particles);
     
-    void setReferencePositions(std::vector<Vec3> positions);
+    void setReferencePositions(std::vector<OpenMM::Vec3> positions);
     
     void updateParametersInContext(OpenMM::Context& context);
     
@@ -84,7 +102,7 @@ public:
 protected:
     OpenMM::ForceImpl* createImpl() const;
 private:
-    std::vector<Vec3> referencePositions;
+    std::vector<OpenMM::Vec3> referencePositions;
     std::vector<int> alignParticles;
     std::vector<int> rmsdParticles;
 };

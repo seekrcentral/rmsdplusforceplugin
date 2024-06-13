@@ -33,6 +33,7 @@
 #include "internal/RMSDPlusForceImpl.h"
 #include "openmm/OpenMMException.h"
 #include "openmm/internal/AssertionUtilities.h"
+#include "openmm/Vec3.h"
 
 using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
@@ -56,6 +57,18 @@ void RMSDPlusForce::setRMSDParticles(vector<int>& particles) {
 
 void RMSDPlusForce::setReferencePositions(vector<Vec3>& positions) {
     referencePositions = positions;
+}
+
+void RMSDPlusForce::getRMSDPlusAlignParameters(int index, int& particle) const {
+	particle = alignParticles[index];
+}
+
+void RMSDPlusForce::getRMSDPlusRMSDParameters(int index, int& particle) const{
+	particle = rmsdParticles[index];
+}
+
+void RMSDPlusForce::getRMSDPlusReferencePosition(int index, Vec3& position) const{
+	position = referencePositions[index];
 }
 
 ForceImpl* RMSDPlusForce::createImpl() const {

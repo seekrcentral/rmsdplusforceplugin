@@ -10,11 +10,11 @@
  */
 
 %include "std_vector.i"
-%include "Vec3.h"
+%include "openmm/Vec3.h"
 namespace std {
   %template(vectord) vector<double>;
   %template(vectori) vector<int>;
-  %template(vectorv) vector<Vec3>;
+  %template(vectorv) vector<OpenMM::Vec3>;
 };
 
 %{
@@ -60,7 +60,7 @@ namespace RMSDPlusForcePlugin {
 
 class RMSDPlusForce : public OpenMM::Force {
 public:
-    RMSDPlusForce(std::vector<Vec3> referencePositions, std::vector<int> alignParticles, std::vector<int> rmsdParticles);
+    RMSDPlusForce(std::vector<OpenMM::Vec3> referencePositions, std::vector<int> alignParticles, std::vector<int> rmsdParticles);
 
     int getForceGroup() const;
     
@@ -70,7 +70,7 @@ public:
     
     std::vector<int> getRMSDParticles() const;
     
-    std::vector<Vec3> getReferencePositions() const;
+    std::vector<OpenMM::Vec3> getReferencePositions() const;
     
     void setForceGroup(int group);
     
@@ -80,7 +80,7 @@ public:
     
     void setRMSDParticles(std::vector<int> particles);
     
-    void setReferencePositions(std::vector<Vec3> positions);
+    void setReferencePositions(std::vector<OpenMM::Vec3> positions);
     
     void updateParametersInContext(OpenMM::Context& context);
     
