@@ -31,8 +31,10 @@
 
 #include "RMSDPlusForceProxy.h"
 #include "RMSDPlusForce.h"
+#include "openmm/Vec3.h"
 #include "openmm/serialization/SerializationNode.h"
 #include <sstream>
+#include <vector>
 
 using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
@@ -44,29 +46,56 @@ RMSDPlusForceProxy::RMSDPlusForceProxy() : SerializationProxy("RMSDPlusForce") {
 void RMSDPlusForceProxy::serialize(const void* object, SerializationNode& node) const {
     node.setIntProperty("version", 1);
     const RMSDPlusForce& force = *reinterpret_cast<const RMSDPlusForce*>(object);
-    SerializationNode& bonds = node.createChildNode("Bonds");
-    for (int i = 0; i < force.getNumBonds(); i++) {
-        int particle1, particle2;
-        double distance, k;
-        force.getBondParameters(i, particle1, particle2, distance, k);
-        bonds.createChildNode("Bond").setIntProperty("p1", particle1).setIntProperty("p2", particle2).setDoubleProperty("d", distance).setDoubleProperty("k", k);
+    SerializationNode& alignParticlesNode = node.createChildNode("alignParticles");
+    int particleIndex;
+    for (int i = 0; i < force.getNumAlignParticles(); i++) {
+    	force.getRMSDPlusAlignParameters(i, &particleIndex)
+    	alignParticlesNode.createChildNode("alignParticle").setIntProperty("particleIndex", particleIndex);
     }
+    SerializationNode& rmsdParticlesNode = node.createChildNode("rmsdParticles");
+	for (int i = 0; i < force.getNumRMSDParticles(); i++) {
+		force.getRMSDPlusRMSDParameters(i, &particleIndex)
+		rmsdParticlesNode.createChildNode("rmsdParticle").setIntProperty("particleIndex", particleIndex);
+	}
+	SerializationNode& referencePositionsNode = node.createChildNode("referencePositions");
+	Vec3 referencePosition;
+	for (int i = 0; i < force.getNumReferencePositions(); i++) {
+		SerializationNode& referencePositionNode = referencePositionsNode.createChildNode("referencePosition");
+		force.getRMSDPlusReferencePosition(i, referencePosition*)
+		referencePositionNode.setDoubleProperty("x", referencePosition[0]);
+		referencePositionNode.setDoubleProperty("y", referencePosition[1]);
+		referencePositionNode.setDoubleProperty("z", referencePosition[2]);
+	}
+
 }
 
 void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
     if (node.getIntProperty("version") != 1)
         throw OpenMMException("Unsupported version number");
-    RMSDPlusForce* force = new RMSDPlusForce();
-    try {
-        const SerializationNode& bonds = node.getChildNode("Bonds");
-        for (int i = 0; i < (int) bonds.getChildren().size(); i++) {
-            const SerializationNode& bond = bonds.getChildren()[i];
-            force->addBond(bond.getIntProperty("p1"), bond.getIntProperty("p2"), bond.getDoubleProperty("d"), bond.getDoubleProperty("k"));
-        }
-    }
-    catch (...) {
-        delete force;
-        throw;
-    }
+
+    vector<Vec3> referencePositions;
+	vector<int> alignParticles;
+	vector<int> rmsdParticles;
+
+	const SerializationNode& alignParticlesNode = node.getChildNode("alignParticles");
+	for (int i = 0; i < (int) alignParticlesNode.getChildren().size(); i++) {
+		const SerializationNode& alignParticleNode = alignParticlesNode.getChildren()[i];
+		alignParticles.push_back(alignParticleNode.getIntProperty("particleIndex"));
+	}
+	const SerializationNode& rmsdParticlesNode = node.getChildNode("rmsdParticles");
+	for (int i = 0; i < (int) rmsdParticlesNode.getChildren().size(); i++) {
+		const SerializationNode& rmsdParticleNode = rmsdParticlesNode.getChildren()[i];
+		rmsdParticles.push_back(rmsdParticleNode.getIntProperty("particleIndex"));
+	}
+	const SerializationNode& referencePositionsNode = node.getChildNode("referencePositions");
+	for (int i = 0; i < (int) referencePositionsNode.getChildren().size(); i++) {
+		const SerializationNode& referencePositionNode = referencePositionsNode.getChildren()[i];
+		Vec3 position;
+		position[0] = referencePositionNode.getDoubleProperty("x");
+		position[1] = referencePositionNode.getDoubleProperty("y");
+		position[2] = referencePositionNode.getDoubleProperty("z");
+		referencePositions.push_back(position);
+	}
+	RMSDPlusForce* force = new RMSDPlusForce(referencePositions, alignParticles, rmsdParticles);
     return force;
 }

@@ -39,23 +39,23 @@ using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
 using namespace std;
 
-RMSDPlusForce::RMSDPlusForce(const vector<Vec3>& referencePositions, 
-                             const vector<int>& alignParticles,
-                             const vector<int>& rmsdParticles) :
-                             referencePositions(referencePositions), 
-                             alignParticles(alignParticles)
-                             rmsdParticles(rmsdParticles) {
+RMSDPlusForce::RMSDPlusForce(const vector<Vec3> referencePositions,
+                             const vector<int> alignParticles,
+                             const vector<int> rmsdParticles) {
+	setReferencePositions(referencePositions);
+	setAlignParticles(alignParticles);
+	setRMSDParticles(rmsdParticles);
 }
 
-void RMSDPlusForce::setAlignParticles(vector<int>& particles) {
+void RMSDPlusForce::setAlignParticles(vector<int> particles) {
     alignParticles = particles;
 }
 
-void RMSDPlusForce::setRMSDParticles(vector<int>& particles) {
+void RMSDPlusForce::setRMSDParticles(vector<int> particles) {
     rmsdParticles = particles;
 }
 
-void RMSDPlusForce::setReferencePositions(vector<Vec3>& positions) {
+void RMSDPlusForce::setReferencePositions(vector<Vec3> positions) {
     referencePositions = positions;
 }
 
