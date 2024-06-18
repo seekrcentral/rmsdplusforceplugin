@@ -60,13 +60,13 @@ void ReferenceCalcRMSDPlusForceKernel::initialize(const System& system, const RM
     rmsdParticles.resize(numRMSDParticles);
     referencePositions.resize(numReferencePositions);
     for (int i = 0; i < numAlignParticles; i++)
-    	force.getRMSDPlusAlignParameters(i, alignParticles[i])
+    	force.getRMSDPlusAlignParameters(i, alignParticles[i]);
 
 	for (int i = 0; i < numRMSDParticles; i++)
-		force.getRMSDPlusRMSDParameters(i, rmsdParticles[i])
+		force.getRMSDPlusRMSDParameters(i, rmsdParticles[i]);
 
 	for (int i = 0; i < numRMSDParticles; i++)
-		force.getRMSDPlusReferencePosition(i, referencePositions[i])
+		force.getRMSDPlusReferencePosition(i, referencePositions[i]);
 
 }
 
@@ -101,11 +101,13 @@ void ReferenceCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& cont
 		if (p1 != rmsdParticles[i])
 			throw OpenMMException("updateParametersInContext: An RMSD particle index has changed");
 	}
+
     for (int i = 0; i < force.getNumReferencePositions(); i++) {
 		Vec3 pos;
 		force.getRMSDPlusReferencePosition(i, pos);
 		if (pos != referencePositions[i])
 			throw OpenMMException("updateParametersInContext: A reference position has changed");
 	}
+
 
 }

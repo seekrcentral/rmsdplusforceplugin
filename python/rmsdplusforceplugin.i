@@ -9,12 +9,11 @@
  * for other STL types like maps.
  */
 
+%include "factory.i"
 %include "std_vector.i"
-%include "openmm/Vec3.h"
 namespace std {
   %template(vectord) vector<double>;
   %template(vectori) vector<int>;
-  %template(vectorv) vector<OpenMM::Vec3>;
 };
 
 %{
@@ -22,6 +21,7 @@ namespace std {
 #include "OpenMM.h"
 #include "OpenMMAmoeba.h"
 #include "OpenMMDrude.h"
+#include "openmm/Vec3.h"
 #include "openmm/RPMDIntegrator.h"
 #include "openmm/RPMDMonteCarloBarostat.h"
 %}
@@ -33,14 +33,6 @@ import simtk.unit as unit
 
 /*
  * Add units to function outputs.
-*/
-
-/* TODO: remove
-%pythonappend RMSDPlusForcePlugin::RMSDPlusForce::getBondParameters(int index, int& particle1, int& particle2,
-                                                             double& length, double& k) const %{
-    val[2] = unit.Quantity(val[2], unit.nanometer)
-    val[3] = unit.Quantity(val[3], unit.kilojoule_per_mole/unit.nanometer**4)
-%}
 */
 
 /*
@@ -60,27 +52,27 @@ namespace RMSDPlusForcePlugin {
 
 class RMSDPlusForce : public OpenMM::Force {
 public:
-    RMSDPlusForce(std::vector<OpenMM::Vec3> referencePositions, std::vector<int> alignParticles, std::vector<int> rmsdParticles);
+    RMSDPlusForce(const std::vector<OpenMM::Vec3>& referencePositions, const std::vector<int>& alignParticles, const std::vector<int>& rmsdParticles);
 
     int getForceGroup() const;
     
     std::string getName() const;
     
-    std::vector<int> getAlignParticles() const;
+    const std::vector<int> getAlignParticles() const;
     
-    std::vector<int> getRMSDParticles() const;
+    const std::vector<int> getRMSDParticles() const;
     
-    std::vector<OpenMM::Vec3> getReferencePositions() const;
-    
+    const std::vector<OpenMM::Vec3> getReferencePositions() const;
+        
     void setForceGroup(int group);
     
     void setName(std::string name);
     
-    void setAlignParticles(std::vector<int> particles);
+    void setAlignParticles(const std::vector<int>& particles);
     
-    void setRMSDParticles(std::vector<int> particles);
+    void setRMSDParticles(const std::vector<int>& particles);
     
-    void setReferencePositions(std::vector<OpenMM::Vec3> positions);
+    void setReferencePositions(const std::vector<OpenMM::Vec3>& positions);
     
     void updateParametersInContext(OpenMM::Context& context);
     

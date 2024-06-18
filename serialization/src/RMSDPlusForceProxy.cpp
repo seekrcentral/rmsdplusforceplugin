@@ -49,23 +49,25 @@ void RMSDPlusForceProxy::serialize(const void* object, SerializationNode& node) 
     SerializationNode& alignParticlesNode = node.createChildNode("alignParticles");
     int particleIndex;
     for (int i = 0; i < force.getNumAlignParticles(); i++) {
-    	force.getRMSDPlusAlignParameters(i, &particleIndex)
+    	force.getRMSDPlusAlignParameters(i, particleIndex);
     	alignParticlesNode.createChildNode("alignParticle").setIntProperty("particleIndex", particleIndex);
     }
     SerializationNode& rmsdParticlesNode = node.createChildNode("rmsdParticles");
 	for (int i = 0; i < force.getNumRMSDParticles(); i++) {
-		force.getRMSDPlusRMSDParameters(i, &particleIndex)
+		force.getRMSDPlusRMSDParameters(i, particleIndex);
 		rmsdParticlesNode.createChildNode("rmsdParticle").setIntProperty("particleIndex", particleIndex);
 	}
+
 	SerializationNode& referencePositionsNode = node.createChildNode("referencePositions");
 	Vec3 referencePosition;
 	for (int i = 0; i < force.getNumReferencePositions(); i++) {
 		SerializationNode& referencePositionNode = referencePositionsNode.createChildNode("referencePosition");
-		force.getRMSDPlusReferencePosition(i, referencePosition*)
+		force.getRMSDPlusReferencePosition(i, referencePosition);
 		referencePositionNode.setDoubleProperty("x", referencePosition[0]);
 		referencePositionNode.setDoubleProperty("y", referencePosition[1]);
 		referencePositionNode.setDoubleProperty("z", referencePosition[2]);
 	}
+
 
 }
 
@@ -87,6 +89,7 @@ void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
 		const SerializationNode& rmsdParticleNode = rmsdParticlesNode.getChildren()[i];
 		rmsdParticles.push_back(rmsdParticleNode.getIntProperty("particleIndex"));
 	}
+
 	const SerializationNode& referencePositionsNode = node.getChildNode("referencePositions");
 	for (int i = 0; i < (int) referencePositionsNode.getChildren().size(); i++) {
 		const SerializationNode& referencePositionNode = referencePositionsNode.getChildren()[i];
@@ -96,6 +99,7 @@ void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
 		position[2] = referencePositionNode.getDoubleProperty("z");
 		referencePositions.push_back(position);
 	}
+
 	RMSDPlusForce* force = new RMSDPlusForce(referencePositions, alignParticles, rmsdParticles);
     return force;
 }
