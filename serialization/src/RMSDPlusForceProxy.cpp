@@ -75,37 +75,44 @@ void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
     if (node.getIntProperty("version") != 1)
         throw OpenMMException("Unsupported version number");
 
-    //vector<Vec3> referencePositions;
-    vector<vector<double>> referencePositions;
-	vector<int> alignParticles;
-	vector<int> rmsdParticles;
+    RMSDPlusForce* force = NULL;
+    try {
+		vector<Vec3> referencePositions;
+		//vector<vector<double>> referencePositions;
+		vector<int> alignParticles;
+		vector<int> rmsdParticles;
 
-	const SerializationNode& alignParticlesNode = node.getChildNode("alignParticles");
-	for (int i = 0; i < (int) alignParticlesNode.getChildren().size(); i++) {
-		const SerializationNode& alignParticleNode = alignParticlesNode.getChildren()[i];
-		alignParticles.push_back(alignParticleNode.getIntProperty("particleIndex"));
-	}
-	const SerializationNode& rmsdParticlesNode = node.getChildNode("rmsdParticles");
-	for (int i = 0; i < (int) rmsdParticlesNode.getChildren().size(); i++) {
-		const SerializationNode& rmsdParticleNode = rmsdParticlesNode.getChildren()[i];
-		rmsdParticles.push_back(rmsdParticleNode.getIntProperty("particleIndex"));
-	}
+		const SerializationNode& alignParticlesNode = node.getChildNode("alignParticles");
+		for (int i = 0; i < (int) alignParticlesNode.getChildren().size(); i++) {
+			const SerializationNode& alignParticleNode = alignParticlesNode.getChildren()[i];
+			alignParticles.push_back(alignParticleNode.getIntProperty("particleIndex"));
+		}
+		const SerializationNode& rmsdParticlesNode = node.getChildNode("rmsdParticles");
+		for (int i = 0; i < (int) rmsdParticlesNode.getChildren().size(); i++) {
+			const SerializationNode& rmsdParticleNode = rmsdParticlesNode.getChildren()[i];
+			rmsdParticles.push_back(rmsdParticleNode.getIntProperty("particleIndex"));
+		}
 
-	const SerializationNode& referencePositionsNode = node.getChildNode("referencePositions");
-	for (int i = 0; i < (int) referencePositionsNode.getChildren().size(); i++) {
-		const SerializationNode& referencePositionNode = referencePositionsNode.getChildren()[i];
-		//Vec3 position;
-		vector<double> position;
-		//position[0] = referencePositionNode.getDoubleProperty("x");
-		position.push_back(referencePositionNode.getDoubleProperty("x"));
-		//position[1] = referencePositionNode.getDoubleProperty("y");
-		position.push_back(referencePositionNode.getDoubleProperty("y"));
-		//position[2] = referencePositionNode.getDoubleProperty("z");
-		position.push_back(referencePositionNode.getDoubleProperty("z"));
-		referencePositions.push_back(position);
-	}
+		const SerializationNode& referencePositionsNode = node.getChildNode("referencePositions");
+		for (int i = 0; i < (int) referencePositionsNode.getChildren().size(); i++) {
+			const SerializationNode& referencePositionNode = referencePositionsNode.getChildren()[i];
+			Vec3 position;
+			//vector<double> position;
+			position[0] = referencePositionNode.getDoubleProperty("x");
+			//position.push_back(referencePositionNode.getDoubleProperty("x"));
+			position[1] = referencePositionNode.getDoubleProperty("y");
+			//position.push_back(referencePositionNode.getDoubleProperty("y"));
+			position[2] = referencePositionNode.getDoubleProperty("z");
+			//position.push_back(referencePositionNode.getDoubleProperty("z"));
+			referencePositions.push_back(position);
+		}
+		return force;
+    }
+    catch (...) {
+    	if (force != NULL)
+			delete force;
+		throw;
+    }
 
-	//RMSDPlusForce* force = new RMSDPlusForce(referencePositions, alignParticles, rmsdParticles);
-	RMSDPlusForce* force = new RMSDPlusForce(referencePositions[0], alignParticles, rmsdParticles);
-    return force;
+
 }

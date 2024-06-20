@@ -2,6 +2,11 @@ set(WRAP_FILE RMSDPlusForcePluginWrapper.cpp)
 set(MODULE_NAME rmsdplusforceplugin)
 
 # Execute SWIG to generate source code for the Python module.
+set(SWIG_INPUT_FILES2
+    "${CMAKE_CURRENT_SOURCE_DIR}/rmsdplusforceplugin.i"
+    "${CMAKE_CURRENT_SOURCE_DIR}/typemaps.i"
+    "${CMAKE_CURRENT_SOURCE_DIR}/header.i"
+)
 
 add_custom_command(
     OUTPUT "${WRAP_FILE}"
@@ -10,7 +15,8 @@ add_custom_command(
         -o "${WRAP_FILE}"
         "-I${OPENMM_DIR}/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/rmsdplusforceplugin.i"
-    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/rmsdplusforceplugin.i"
+    DEPENDS 
+        ${SWIG_INPUT_FILES2}
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 

@@ -33,43 +33,27 @@
 #include "internal/RMSDPlusForceImpl.h"
 #include "openmm/OpenMMException.h"
 #include "openmm/internal/AssertionUtilities.h"
-#include "openmm/Vec3.h"
 #include <iostream>
 
 using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
 using namespace std;
 
-/*
 RMSDPlusForce::RMSDPlusForce(const vector<Vec3>& referencePositions,
-                             const vector<int>& alignParticles,
-                             const vector<int>& rmsdParticles) {
-	setReferencePositions(referencePositions);
-	setAlignParticles(alignParticles);
-	setRMSDParticles(rmsdParticles);
-*/
-
-RMSDPlusForce::RMSDPlusForce(const vector<double>& referencePosition,
 		                     const vector<int>& alignParticles,
 							 const vector<int>& rmsdParticles) {
-	//setReferencePositions(referencePositions);
+	setReferencePositions(referencePositions);
 	setAlignParticles(alignParticles);
 	setRMSDParticles(rmsdParticles);
 
 	// DEBUG
-	/*
+
 	cout << "DEBUG: initialize. referencePositions: \n";
 	for (int i = 0; i < referencePositions.size(); i++) {
 		cout << "x: " << referencePositions[i][0] << ", ";
 		cout << "y: " << referencePositions[i][1] << ", ";
 		cout << "z: " << referencePositions[i][2] << "\n";
 	}
-	*/
-
-	cout << "DEBUG: initialize. referencePosition: \n";
-	cout << "x: " << referencePosition[0] << ", ";
-	cout << "y: " << referencePosition[1] << ", ";
-	cout << "z: " << referencePosition[2] << "\n";
 
 	cout << "DEBUG: initialize. alignParticles: [";
 	for (int i = 0; i < alignParticles.size(); i++) {

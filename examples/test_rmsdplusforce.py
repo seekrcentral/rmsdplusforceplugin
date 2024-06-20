@@ -4,6 +4,7 @@ from openmm.unit import *
 from sys import stdout
 
 import rmsdplusforceplugin
+import RMSDCVplugin
 
 prmtop = AmberPrmtopFile("alanine_dipeptide.prmtop")
 inpcrd = AmberInpcrdFile("alanine_dipeptide.inpcrd")
@@ -19,8 +20,11 @@ ref_positions = inpcrd.positions
 alignment_particle_selection = list(range(11))
 rmsd_particle_selection = list(range(11, 22))
 
+#rmsd_force = RMSDCVplugin.RMSDCVForce(
+#    ref_positions, alignment_particle_selection)
+
 rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
-    ref_positions[0], alignment_particle_selection, rmsd_particle_selection)
+    ref_positions, alignment_particle_selection, rmsd_particle_selection)
 
 #rmsd_force = RMSDForce(
 #    ref_positions, alignment_particle_selection)
