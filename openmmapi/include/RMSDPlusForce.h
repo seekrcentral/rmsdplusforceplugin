@@ -50,8 +50,12 @@ public:
     /**
      * Create an RMSDPlusForce.
      */
-    RMSDPlusForce(const std::vector<OpenMM::Vec3>& referencePositions,
-                  const std::vector<int>& alignParticles,
+    //RMSDPlusForce(const std::vector<OpenMM::Vec3>& referencePositions,
+    //              const std::vector<int>& alignParticles,
+    //              const std::vector<int>& rmsdParticles);
+
+    RMSDPlusForce(const std::vector<double>& referencePosition,
+    		      const std::vector<int>& alignParticles,
                   const std::vector<int>& rmsdParticles);
 
     /**

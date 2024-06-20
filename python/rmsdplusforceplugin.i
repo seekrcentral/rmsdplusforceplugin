@@ -1,6 +1,7 @@
 %module rmsdplusforceplugin
 
 %import(module="simtk.openmm") "swig/OpenMMSwigHeaders.i"
+%import(module="simtk.openmm") "swig/typemaps.i"
 %include "swig/typemaps.i"
 
 /*
@@ -47,13 +48,25 @@ import simtk.unit as unit
     }
 }
 
+%pythonprepend RMSDPlusForcePlugin::RMSDPlusForce(const std::vector<double>& referencePosition, const std::vector<int>& alignParticles, const std::vector<int>& rmsdParticles) %{
+    print("CONVERTING")
+    if unit.is_quantity(referencePosition):
+        referencePosition = referencePosition.value_in_unit(unit.nanometer)
+%}
+
+%pythonprepend RMSDPlusForcePlugin::RMSDPlusForce::setReferencePositions(const std::vector< Vec3 > &positions) %{
+    if unit.is_quantity(positions):
+        positions = positions.value_in_unit(unit.nanometer)
+%}
 
 namespace RMSDPlusForcePlugin {
 
 class RMSDPlusForce : public OpenMM::Force {
 public:
-    RMSDPlusForce(const std::vector<OpenMM::Vec3>& referencePositions, const std::vector<int>& alignParticles, const std::vector<int>& rmsdParticles);
-
+    //RMSDPlusForce(const std::vector<OpenMM::Vec3>& referencePositions, const std::vector<int>& alignParticles, const std::vector<int>& rmsdParticles);
+    
+    RMSDPlusForce(const std::vector<double>& referencePosition, const std::vector<int>& alignParticles, const std::vector<int>& rmsdParticles);
+    
     int getForceGroup() const;
     
     std::string getName() const;

@@ -20,7 +20,7 @@ alignment_particle_selection = list(range(11))
 rmsd_particle_selection = list(range(11, 22))
 
 rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
-    ref_positions, alignment_particle_selection, rmsd_particle_selection)
+    ref_positions[0], alignment_particle_selection, rmsd_particle_selection)
 
 #rmsd_force = RMSDForce(
 #    ref_positions, alignment_particle_selection)
