@@ -42,6 +42,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include "sfmt/SFMT.h"
 
 using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
@@ -49,101 +50,115 @@ using namespace std;
 
 extern "C" OPENMM_EXPORT void registerRMSDPlusReferenceKernelFactories();
 
-void testForce() {
-    // Create a chain of particles connected by bonds.
-    /*
-    const int numBonds = 10;
-    const int numParticles = numBonds+1;
-    System system;
-    vector<Vec3> positions(numParticles);
-    for (int i = 0; i < numParticles; i++) {
-        system.addParticle(1.0);
-        positions[i] = Vec3(i, 0.1*i, -0.3*i);
+double estimateRMSDPlusCV(vector<OpenMM::Vec3>& positions, vector<OpenMM::Vec3>& referencePos, vector<int>& alignParticles, vector<int>& rmsdParticles) {
+    // Estimate the RMSDCV.  For simplicity we omit the orientation alignment, but they should
+    // already be almost perfectly aligned.
+
+    Vec3 center1, center2;
+    for (int i : alignParticles) {
+        center1 += referencePos[i];
+        center2 += positions[i];
     }
-    RMSDPlusForce* force = new RMSDPlusForce();
-    system.addForce(force);
-    for (int i = 0; i < numBonds; i++)
-        force->addBond(i, i+1, 1.0+sin(0.8*i), cos(0.3*i));
-
-    // Compute the forces and energy.
-
-    VerletIntegrator integ(1.0);
-    Platform& platform = Platform::getPlatformByName("Reference");
-    Context context(system, integ, platform);
-    context.setPositions(positions);
-    State state = context.getState(State::Energy | State::Forces);
-
-    // See if the energy is correct.
-
-    double expectedEnergy = 0;
-    for (int i = 0; i < numBonds; i++) {
-        double length = 1.0+sin(0.8*i);
-        double k = cos(0.3*i);
-        Vec3 delta = positions[i+1]-positions[i];
-        double dr = sqrt(delta.dot(delta))-length;
-        expectedEnergy += k*dr*dr*dr*dr;
+    center1 /= alignParticles.size();
+    center2 /= alignParticles.size();
+    double estimate = 0.0;
+    for (int i : rmsdParticles) {
+        Vec3 delta = (referencePos[i]-center1) - (positions[i]-center2);
+        estimate += delta.dot(delta);
     }
-    ASSERT_EQUAL_TOL(expectedEnergy, state.getPotentialEnergy(), 1e-5);
-
-    // Validate the forces by moving each particle along each axis, and see if the energy changes by the correct amount.
-
-    double offset = 1e-3;
-    for (int i = 0; i < numParticles; i++)
-        for (int j = 0; j < 3; j++) {
-            vector<Vec3> offsetPos = positions;
-            offsetPos[i][j] = positions[i][j]-offset;
-            context.setPositions(offsetPos);
-            double e1 = context.getState(State::Energy).getPotentialEnergy();
-            offsetPos[i][j] = positions[i][j]+offset;
-            context.setPositions(offsetPos);
-            double e2 = context.getState(State::Energy).getPotentialEnergy();
-            ASSERT_EQUAL_TOL(state.getForces()[i][j], (e1-e2)/(2*offset), 1e-3);
-        }
-    */
+    return sqrt(estimate/rmsdParticles.size());
 }
 
-void testChangingParameters() {
-	/*
-    const double k = 1.5;
-    const double length = 0.5;
+void testRMSDCV() {
     Platform& platform = Platform::getPlatformByName("Reference");
-
-    // Create a system with one bond.
-
+    const int numParticles = 20;
     System system;
-    system.addParticle(1.0);
-    system.addParticle(1.0);
-    RMSDPlusForce* force = new RMSDPlusForce();
-    force->addBond(0, 1, length, k);
+    vector<Vec3> referencePos(numParticles);
+    vector<Vec3> positions(numParticles);
+    vector<int> alignParticles;
+    vector<int> rmsdParticles;
+    OpenMM_SFMT::SFMT sfmt;
+    init_gen_rand(0, sfmt);
+    for (int i = 0; i < numParticles; ++i) {
+        system.addParticle(1.0);
+        referencePos[i] = Vec3(genrand_real2(sfmt), genrand_real2(sfmt), genrand_real2(sfmt))*10;
+        positions[i] = referencePos[i] + Vec3(genrand_real2(sfmt), genrand_real2(sfmt), genrand_real2(sfmt))*0.2;
+        if (i%5 != 0)
+            alignParticles.push_back(i);
+        if (i%5 == 0)
+            rmsdParticles.push_back(i);
+    }
+    cout << "before\n";
+    RMSDPlusForce* force = new RMSDPlusForce(referencePos, alignParticles, rmsdParticles);
+    force->setAlignParticles(alignParticles);
+    cout << "after\n";
     system.addForce(force);
-    vector<Vec3> positions(2);
-    positions[0] = Vec3(1, 0, 0);
-    positions[1] = Vec3(2, 0, 0);
-
-    // Check the energy.
-
-    VerletIntegrator integ(1.0);
-    Context context(system, integ, platform);
+    VerletIntegrator integrator(0.001);
+    Context context(system, integrator, platform);
     context.setPositions(positions);
-    State state = context.getState(State::Energy);
-    ASSERT_EQUAL_TOL(k*pow(1.0-length, 4), state.getPotentialEnergy(), 1e-5);
+    double estimate = estimateRMSDPlusCV(positions, referencePos, alignParticles, rmsdParticles);
 
-    // Modify the parameters.
+    // Have the force compute the RMSDPlusCV.  It should be very slightly less than
+    // what we calculated above (since that omitted the rotation).
 
-    const double k2 = 2.2;
-    const double length2 = 0.9;
-    force->setBondParameters(0, 0, 1, length2, k2);
+    State state1 = context.getState(State::Energy);
+    double RMSDPlusCV = state1.getPotentialEnergy();
+    ASSERT(RMSDPlusCV <= estimate);
+    cout << "estimate:" << estimate << "\n";
+    cout << "RMSDPlusCV:" << RMSDPlusCV << "\n";
+    ASSERT(RMSDPlusCV > 0.8*estimate);
+
+    // Translate and rotate all the particles.  This should have no effect on the RMSDCV.
+
+    vector<Vec3> transformedPos(numParticles);
+    double cs = cos(1.1), sn = sin(1.1);
+    for (int i = 0; i < numParticles; i++) {
+        Vec3 p = positions[i];
+        transformedPos[i] = Vec3( cs*p[0] + sn*p[1] + 0.1,
+                                 -sn*p[0] + cs*p[1] - 11.3,
+                                  p[2] + 1.5);
+    }
+    context.setPositions(transformedPos);
+    state1 = context.getState(State::Energy | State::Forces);
+    ASSERT_EQUAL_TOL(RMSDPlusCV, state1.getPotentialEnergy(), 1e-4);
+
+    // Take a small step in the direction of the energy gradient and see whether the potential energy changes by the expected amount.
+
+    const vector<Vec3>& forces = state1.getForces();
+    double norm = 0.0;
+    for (int i = 0; i < (int) forces.size(); ++i)
+        norm += forces[i].dot(forces[i]);
+    norm = std::sqrt(norm);
+    const double stepSize = 0.1;
+    double step = 0.5*stepSize/norm;
+    vector<Vec3> positions2(numParticles), positions3(numParticles);
+    for (int i = 0; i < (int) positions.size(); ++i) {
+        Vec3 p = transformedPos[i];
+        Vec3 f = forces[i];
+        positions2[i] = Vec3(p[0]-f[0]*step, p[1]-f[1]*step, p[2]-f[2]*step);
+        positions3[i] = Vec3(p[0]+f[0]*step, p[1]+f[1]*step, p[2]+f[2]*step);
+    }
+    context.setPositions(positions2);
+    State state2 = context.getState(State::Energy);
+    context.setPositions(positions3);
+    State state3 = context.getState(State::Energy);
+    ASSERT_EQUAL_TOL(norm, (state2.getPotentialEnergy()-state3.getPotentialEnergy())/stepSize, 1e-3);
+
+    // Check that updateParametersInContext() works correctly.
+
+    context.setPositions(transformedPos);
+    force->setReferencePositions(transformedPos);
     force->updateParametersInContext(context);
-    state = context.getState(State::Energy);
-    ASSERT_EQUAL_TOL(k2*pow(1.0-length2, 4), state.getPotentialEnergy(), 1e-5);
-    */
+    ASSERT_EQUAL_TOL(0.0, context.getState(State::Energy).getPotentialEnergy(), 1e-2);
+    context.setPositions(referencePos);
+    ASSERT_EQUAL_TOL(RMSDPlusCV, context.getState(State::Energy).getPotentialEnergy(), 1e-4);
+
 }
 
 int main() {
     try {
         registerRMSDPlusReferenceKernelFactories();
-        testForce();
-        testChangingParameters();
+        testRMSDCV();
     }
     catch(const std::exception& e) {
         std::cout << "exception: " << e.what() << std::endl;

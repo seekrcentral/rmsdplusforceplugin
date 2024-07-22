@@ -43,35 +43,39 @@ using namespace std;
 extern "C" void registerRMSDPlusForceSerializationProxies();
 
 void testSerialization() {
-    // Create a Force.
-    /*
-    RMSDPlusForce force;
-    force.addBond(0, 1, 1.0, 2.0);
-    force.addBond(0, 2, 2.0, 2.1);
-    force.addBond(2, 3, 3.0, 2.2);
-    force.addBond(5, 1, 4.0, 2.3);
+	// Create a Force.
 
-    // Serialize and then deserialize it.
+	vector<Vec3> refPos;
+	for (int i = 0; i < 10; i++)
+		refPos.push_back(Vec3(i/5.0, i*1.2, i*i/3.5));
+	vector<int> align_particles;
+	for (int i = 0; i < 5; i++)
+		align_particles.push_back(i*i);
+	vector<int> rmsd_particles;
+	for (int i = 5; i < 10; i++)
+		rmsd_particles.push_back(i*i);
+	RMSDPlusForce force(refPos, align_particles, rmsd_particles);
+	force.setForceGroup(3);
 
-    stringstream buffer;
-    XmlSerializer::serialize<RMSDPlusForce>(&force, "Force", buffer);
-    RMSDPlusForce* copy = XmlSerializer::deserialize<RMSDPlusForce>(buffer);
+	// Serialize and then deserialize it.
 
-    // Compare the two forces to see if they are identical.
+	stringstream buffer;
+	XmlSerializer::serialize<RMSDPlusForce>(&force, "Force", buffer);
+	RMSDPlusForce* copy = XmlSerializer::deserialize<RMSDPlusForce>(buffer);
 
-    RMSDPlusForce& force2 = *copy;
-    ASSERT_EQUAL(force.getNumBonds(), force2.getNumBonds());
-    for (int i = 0; i < force.getNumBonds(); i++) {
-        int a1, a2, b1, b2;
-        double da, db, ka, kb;
-        force.getBondParameters(i, a1, a2, da, ka);
-        force2.getBondParameters(i, b1, b2, db, kb);
-        ASSERT_EQUAL(a1, b1);
-        ASSERT_EQUAL(a2, b2);
-        ASSERT_EQUAL(da, db);
-        ASSERT_EQUAL(ka, kb);
-    }
-    */
+	// Compare the two forces to see if they are identical.
+
+	RMSDPlusForce& force2 = *copy;
+	ASSERT_EQUAL(force.getForceGroup(), force2.getForceGroup());
+	ASSERT_EQUAL(force.getReferencePositions().size(), force2.getReferencePositions().size());
+	for (int i = 0; i < force.getReferencePositions().size(); i++)
+		ASSERT_EQUAL_VEC(force.getReferencePositions()[i], force2.getReferencePositions()[i], 0.0);
+	ASSERT_EQUAL(force.getAlignParticles().size(), force2.getAlignParticles().size());
+	for (int i = 0; i < force.getAlignParticles().size(); i++)
+		ASSERT_EQUAL(force.getAlignParticles()[i], force2.getAlignParticles()[i]);
+	ASSERT_EQUAL(force.getRMSDParticles().size(), force2.getRMSDParticles().size());
+	for (int i = 0; i < force.getRMSDParticles().size(); i++)
+		ASSERT_EQUAL(force.getRMSDParticles()[i], force2.getRMSDParticles()[i]);
 }
 
 int main() {

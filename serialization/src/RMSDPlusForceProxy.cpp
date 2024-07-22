@@ -46,6 +46,7 @@ RMSDPlusForceProxy::RMSDPlusForceProxy() : SerializationProxy("RMSDPlusForce") {
 void RMSDPlusForceProxy::serialize(const void* object, SerializationNode& node) const {
     node.setIntProperty("version", 1);
     const RMSDPlusForce& force = *reinterpret_cast<const RMSDPlusForce*>(object);
+    node.setIntProperty("forceGroup", force.getForceGroup());
     SerializationNode& alignParticlesNode = node.createChildNode("alignParticles");
     int particleIndex;
     for (int i = 0; i < force.getNumAlignParticles(); i++) {
@@ -78,7 +79,6 @@ void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
     RMSDPlusForce* force = NULL;
     try {
 		vector<Vec3> referencePositions;
-		//vector<vector<double>> referencePositions;
 		vector<int> alignParticles;
 		vector<int> rmsdParticles;
 
@@ -97,15 +97,13 @@ void* RMSDPlusForceProxy::deserialize(const SerializationNode& node) const {
 		for (int i = 0; i < (int) referencePositionsNode.getChildren().size(); i++) {
 			const SerializationNode& referencePositionNode = referencePositionsNode.getChildren()[i];
 			Vec3 position;
-			//vector<double> position;
 			position[0] = referencePositionNode.getDoubleProperty("x");
-			//position.push_back(referencePositionNode.getDoubleProperty("x"));
 			position[1] = referencePositionNode.getDoubleProperty("y");
-			//position.push_back(referencePositionNode.getDoubleProperty("y"));
 			position[2] = referencePositionNode.getDoubleProperty("z");
-			//position.push_back(referencePositionNode.getDoubleProperty("z"));
 			referencePositions.push_back(position);
 		}
+		force = new RMSDPlusForce(referencePositions, alignParticles, rmsdParticles);
+		force->setForceGroup(node.getIntProperty("forceGroup", 0));
 		return force;
     }
     catch (...) {

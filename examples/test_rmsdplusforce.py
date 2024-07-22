@@ -4,7 +4,6 @@ from openmm.unit import *
 from sys import stdout
 
 import rmsdplusforceplugin
-import RMSDCVplugin
 
 prmtop = AmberPrmtopFile("alanine_dipeptide.prmtop")
 inpcrd = AmberInpcrdFile("alanine_dipeptide.inpcrd")
@@ -15,21 +14,11 @@ system = prmtop.createSystem(
 
 energy_string = "k*(RMSD - value)^2"
 ref_positions = inpcrd.positions
-#particle_selection = list(range(22))
-#rmsd_force = RMSDForce(ref_positions, particle_selection)
 alignment_particle_selection = list(range(11))
 rmsd_particle_selection = list(range(11, 22))
 
-#rmsd_force = RMSDCVplugin.RMSDCVForce(
-#    ref_positions, alignment_particle_selection)
-
 rmsd_force = rmsdplusforceplugin.RMSDPlusForce(
     ref_positions, alignment_particle_selection, rmsd_particle_selection)
-
-#rmsd_force = RMSDForce(
-#    ref_positions, alignment_particle_selection)
-
-exit()
 
 cv_force = CustomCVForce(energy_string)
 cv_force.addCollectiveVariable("RMSD", rmsd_force)
@@ -40,8 +29,9 @@ system.addForce(cv_force)
 
 # Create a Langevin integrator for constant temperature.
 integrator = LangevinIntegrator(300.0*kelvin, 1/picosecond, 0.002*picoseconds)
-
-simulation = Simulation(prmtop.topology, system, integrator)
+platform = Platform.getPlatformByName("Reference")
+simulation = Simulation(prmtop.topology, system, integrator, platform=platform,
+                        platformProperties=None)
 
 # Uncomment the following line to create a simulation that uses one of the GPUs.
 #platform = Platform.getPlatformByName('CUDA')
@@ -64,8 +54,8 @@ simulation.minimizeEnergy()
 
 # Create another reporter to display system info as the simulation runs.
 simulation.reporters.append(StateDataReporter(
-    stdout, 100, step=True, potentialEnergy=True, temperature=True, 
+    stdout, 1, step=True, potentialEnergy=True, temperature=True, 
     volume=True))
 
 # Advance time by 10000 timesteps (40 picoseconds for Langevin integrator).
-simulation.step(1000)
+simulation.step(10)
