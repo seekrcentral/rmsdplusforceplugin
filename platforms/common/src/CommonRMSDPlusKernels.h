@@ -61,6 +61,15 @@ public:
      * @param includeEnergy  true if the energy should be calculated
      * @return the potential energy due to the force
      */
+    void recordParameters(const RMSDPlusForce& force);
+        /**
+         * Execute the kernel to calculate the forces and/or energy.
+         *
+         * @param context        the context in which to execute this kernel
+         * @param includeForces  true if forces should be calculated
+         * @param includeEnergy  true if the energy should be calculated
+         * @return the potential energy due to the force
+         */
     double execute(OpenMM::ContextImpl& context, bool includeForces, bool includeEnergy);
     /**
      * Copy changed parameters over to a context.
@@ -68,13 +77,25 @@ public:
      * @param context    the context to copy parameters to
      * @param force      the RMSDPlusForce to copy the parameters from
      */
+    template <class REAL>
+	double executeImpl(ContextImpl& context);
+	/**
+	 * Copy changed parameters over to a context.
+	 *
+	 * @param context    the context to copy parameters to
+	 * @param force      the RMSDPlusForce to copy the parameters from
+	 */
     void copyParametersToContext(OpenMM::ContextImpl& context, const RMSDPlusForce& force);
 private:
-    //int numBonds;
     bool hasInitializedKernel;
-    OpenMM::ComputeContext& cc;
-    const OpenMM::System& system;
-    OpenMM::ComputeArray params;
+    class ForceInfo;
+	ComputeContext& cc;
+	const OpenMM::System& system;
+	ForceInfo* info;
+	int blockSize;
+	double sumNormRef;
+	ComputeArray referencePos, alignParticles, rmsdParticles, buffer;
+	ComputeKernel kernel1, kernel2, kernel3;
 };
 
 } // namespace RMSDPlusForcePlugin

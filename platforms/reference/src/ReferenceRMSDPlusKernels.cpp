@@ -55,7 +55,6 @@ static vector<RealVec>& extractForces(ContextImpl& context) {
 
 void ReferenceCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDPlusForce& force) {
     // Initialize bond parameters.
-	cout << "mark1\n";
 	int numAlignParticles = force.getNumAlignParticles();
 	int numRMSDParticles = force.getNumRMSDParticles();
 	int numReferencePositions = force.getNumReferencePositions();
@@ -78,19 +77,19 @@ void ReferenceCalcRMSDPlusForceKernel::initialize(const System& system, const RM
 	for (int i = 0; i < numRMSDParticles; i++)
 		force.getRMSDPlusRMSDParameters(i, rmsdParticles[i]);
 
-	for (int i = 0; i < numRMSDParticles; i++)
+	for (int i = 0; i < numReferencePositions; i++)
 		force.getRMSDPlusReferencePosition(i, referencePositions[i]);
 
 	Vec3 alignCenter;
-	for (int i : alignParticles)
+	for (int i : alignParticles) {
 		alignCenter += referencePositions[i];
+	}
 	alignCenter /= alignParticles.size();
 	for (Vec3& p : referencePositions)
 		p -= alignCenter;
 }
 
 double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool includeForces, bool includeEnergy) {
-	cout << "mark2\n";
 	vector<RealVec>& pos = extractPositions(context);
     vector<RealVec>& forces = extractForces(context);
 
@@ -103,9 +102,9 @@ double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool incl
 		alignCenter += pos[i];
 	alignCenter /= numAlignParticles;
 	vector<Vec3> alignPositions(numAlignParticles);
-	for (int i = 0; i < numAlignParticles; i++)
+	for (int i = 0; i < numAlignParticles; i++) {
 		alignPositions[i] = pos[alignParticles[i]]-alignCenter;
-
+	}
 	// Compute the correlation matrix.
 
 	double R[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
@@ -147,29 +146,20 @@ double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool incl
 	Array2D<double> vectors;
 	eigen.getV(vectors);
 
-	// Compute the RMSD.
-
-	int numRMSDParticles = rmsdParticles.size();
-	vector<Vec3> rmsdPositions(numRMSDParticles);
-	for (int i = 0; i < numRMSDParticles; i++)
-		rmsdPositions[i] = pos[rmsdParticles[i]]-alignCenter;
-
+	// Compute the RMSD of align particles.
 	double sum = 0.0;
-	for (int i = 0; i < numRMSDParticles; i++) {
-		int index = rmsdParticles[i];
-		sum += rmsdPositions[i].dot(rmsdPositions[i]) + referencePositions[index].dot(referencePositions[index]);
-	    cout << "sum:" << sum << "\n";
+	for (int i = 0; i < numAlignParticles; i++) {
+		int index = alignParticles[i];
+		sum += alignPositions[i].dot(alignPositions[i]) + referencePositions[index].dot(referencePositions[index]);
 	}
-	cout << "numRMSDParticles:" << numRMSDParticles << "\n";
-	cout << "values[3]:" << values[3] << "\n";
-	double msd = (sum-2*values[3])/numRMSDParticles;
-	if (msd < 1e-20) {
+	
+	double align_msd = (sum-2*values[3])/numAlignParticles;
+	if (align_msd < 1e-20) {
 		// The particles are perfectly aligned, so all the forces should be zero.
 		// Numerical error can lead to NaNs, so just return 0 now.
-		cout << "msd too small.\n";
 		return 0.0;
 	}
-	double rmsd = sqrt(msd);
+	//double align_rmsd = sqrt(align_msd);
 
 	// Compute the rotation matrix.
 
@@ -183,6 +173,23 @@ double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool incl
 					  {2*(q13-q02), 2*(q23+q01), q00-q11-q22+q33}};
 
 	// Rotate the reference positions and compute the forces.
+	sum = 0.0;
+	int numRMSDParticles = rmsdParticles.size();
+	vector<Vec3> rmsdPositions(numRMSDParticles);
+	for (int i = 0; i < numRMSDParticles; i++) {
+		rmsdPositions[i] = pos[rmsdParticles[i]]-alignCenter;
+	}
+
+	for (int i = 0; i < numRMSDParticles; i++) {
+		const Vec3& p = referencePositions[rmsdParticles[i]];
+		Vec3 rotatedRef(U[0][0]*p[0] + U[1][0]*p[1] + U[2][0]*p[2],
+						U[0][1]*p[0] + U[1][1]*p[1] + U[2][1]*p[2],
+						U[0][2]*p[0] + U[1][2]*p[1] + U[2][2]*p[2]);
+		Vec3 deviation = rmsdPositions[i]-rotatedRef;
+		sum += deviation.dot(deviation);
+	}
+	double msd = sum / numRMSDParticles;
+	double rmsd = sqrt(msd);
 
 	for (int i = 0; i < numRMSDParticles; i++) {
 		const Vec3& p = referencePositions[rmsdParticles[i]];
@@ -191,36 +198,43 @@ double ReferenceCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool incl
 						U[0][2]*p[0] + U[1][2]*p[1] + U[2][2]*p[2]);
 		forces[rmsdParticles[i]] -= (rmsdPositions[i]-rotatedRef) / (rmsd*numRMSDParticles);
 	}
-	cout << "rmsd:" << rmsd << "\n";
 	return rmsd;
 }
 
 void ReferenceCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context, const RMSDPlusForce& force) {
-    if (force.getNumAlignParticles() != alignParticles.size())
-        throw OpenMMException("updateParametersInContext: The number of align particles has changed");
-    if (force.getNumRMSDParticles() != rmsdParticles.size())
-        throw OpenMMException("updateParametersInContext: The number of RMSD particles has changed");
     if (force.getNumReferencePositions() != referencePositions.size())
         throw OpenMMException("updateParametersInContext: The number of reference positions has changed");
-    for (int i = 0; i < force.getNumAlignParticles(); i++) {
-        int p1;
-        force.getRMSDPlusAlignParameters(i, p1);
-        if (p1 != alignParticles[i])
-            throw OpenMMException("updateParametersInContext: An align particle index has changed");
-    }
-    for (int i = 0; i < force.getNumRMSDParticles(); i++) {
-		int p1;
-		force.getRMSDPlusRMSDParameters(i, p1);
-		if (p1 != rmsdParticles[i])
-			throw OpenMMException("updateParametersInContext: An RMSD particle index has changed");
-	}
 
-    for (int i = 0; i < force.getNumReferencePositions(); i++) {
-		Vec3 pos;
-		force.getRMSDPlusReferencePosition(i, pos);
-		if (pos != referencePositions[i])
-			throw OpenMMException("updateParametersInContext: A reference position has changed");
-	}
+    int numAlignParticles = force.getNumAlignParticles();
+	int numRMSDParticles = force.getNumRMSDParticles();
+	int numReferencePositions = force.getNumReferencePositions();
 
+	if (numAlignParticles == 0)
+		throw OpenMMException("alignParticles may not be empty.");
+
+	if (numRMSDParticles == 0)
+		throw OpenMMException("rmsdParticles may not be empty.");
+
+	if (numReferencePositions != context.getSystem().getNumParticles())
+		throw OpenMMException("referencePositions must have the same number of particles as the system.");
+
+	alignParticles.resize(numAlignParticles);
+	rmsdParticles.resize(numRMSDParticles);
+	referencePositions.resize(numReferencePositions);
+	for (int i = 0; i < numAlignParticles; i++)
+		force.getRMSDPlusAlignParameters(i, alignParticles[i]);
+
+	for (int i = 0; i < numRMSDParticles; i++)
+		force.getRMSDPlusRMSDParameters(i, rmsdParticles[i]);
+
+	for (int i = 0; i < numReferencePositions; i++)
+		force.getRMSDPlusReferencePosition(i, referencePositions[i]);
+
+	Vec3 center;
+	for (int i : alignParticles)
+		center += referencePositions[i];
+	center /= alignParticles.size();
+	for (Vec3& p : referencePositions)
+		p -= center;
 
 }

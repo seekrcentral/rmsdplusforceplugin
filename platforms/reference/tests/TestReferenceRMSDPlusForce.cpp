@@ -69,7 +69,7 @@ double estimateRMSDPlusCV(vector<OpenMM::Vec3>& positions, vector<OpenMM::Vec3>&
     return sqrt(estimate/rmsdParticles.size());
 }
 
-void testRMSDCV() {
+void testRMSDPlusCV() {
     Platform& platform = Platform::getPlatformByName("Reference");
     const int numParticles = 20;
     System system;
@@ -83,30 +83,59 @@ void testRMSDCV() {
         system.addParticle(1.0);
         referencePos[i] = Vec3(genrand_real2(sfmt), genrand_real2(sfmt), genrand_real2(sfmt))*10;
         positions[i] = referencePos[i] + Vec3(genrand_real2(sfmt), genrand_real2(sfmt), genrand_real2(sfmt))*0.2;
-        if (i%5 != 0)
-            alignParticles.push_back(i);
-        if (i%5 == 0)
-            rmsdParticles.push_back(i);
+        //if (i%5 != 0)
+        //    alignParticles.push_back(i);
+        //if (i%5 == 0)
+        //    rmsdParticles.push_back(i);
     }
-    cout << "before\n";
+    positions[0][0] = 1.1935; positions[0][1] =  1.1972; positions[0][2] = 1.2004;
+	positions[1][0] = 1.3461; positions[1][1] =  2.1199; positions[1][2] = 2.0782;
+	positions[2][0] = 1.7296; positions[2][1] =  0.2857; positions[2][2] = 2.4467;
+	positions[3][0] = 0.5572; positions[3][1] =  1.2005; positions[3][2] = 1.1523;
+	positions[4][0] = 1.5434; positions[4][1] =  1.2144; positions[4][2] = 1.6613;
+	positions[5][0] = 1.9985; positions[5][1] =  1.5946; positions[5][2] = 0.2312;
+	positions[6][0] = 1.9237; positions[6][1] =  1.2023; positions[6][2] = 2.1215;
+	positions[7][0] = 1.1097; positions[7][1] =  1.1192; positions[7][2] = 0.4674;
+	positions[8][0] = 1.4092; positions[8][1] =  2.0307; positions[8][2] = 0.4728;
+	positions[9][0] = -0.2170; positions[9][1] = 2.0325; positions[9][2] = 2.2613;
+
+	referencePos[0][0] = 1.1835; referencePos[0][1] =  1.1872; referencePos[0][2] = 1.2204;
+	referencePos[1][0] = 1.3361; referencePos[1][1] =  2.1299; referencePos[1][2] = 2.0882;
+	referencePos[2][0] = 1.7096; referencePos[2][1] =  0.2657; referencePos[2][2] = 2.4567;
+	referencePos[3][0] = 0.5672; referencePos[3][1] =  1.2205; referencePos[3][2] = 1.1623;
+	referencePos[4][0] = 1.5734; referencePos[4][1] =  1.2344; referencePos[4][2] = 1.6513;
+	referencePos[5][0] = 1.9885; referencePos[5][1] =  1.5746; referencePos[5][2] = 0.2212;
+	referencePos[6][0] = 1.9337; referencePos[6][1] =  1.2323; referencePos[6][2] = 2.1115;
+	referencePos[7][0] = 1.1197; referencePos[7][1] =  1.1092; referencePos[7][2] = 0.4574;
+	referencePos[8][0] = 1.4292; referencePos[8][1] =  2.0207; referencePos[8][2] = 0.4628;
+	referencePos[9][0] = -0.2270; referencePos[9][1] = 2.0225; referencePos[9][2] = 2.2513;
+
+	alignParticles.push_back(0);
+	alignParticles.push_back(1);
+	alignParticles.push_back(3);
+	alignParticles.push_back(7);
+	rmsdParticles.push_back(2);
+	rmsdParticles.push_back(4);
+	rmsdParticles.push_back(5);
+
     RMSDPlusForce* force = new RMSDPlusForce(referencePos, alignParticles, rmsdParticles);
     force->setAlignParticles(alignParticles);
-    cout << "after\n";
     system.addForce(force);
     VerletIntegrator integrator(0.001);
     Context context(system, integrator, platform);
     context.setPositions(positions);
+
+    // TODO; remove
     double estimate = estimateRMSDPlusCV(positions, referencePos, alignParticles, rmsdParticles);
 
     // Have the force compute the RMSDPlusCV.  It should be very slightly less than
     // what we calculated above (since that omitted the rotation).
-
+    double expected_rmsd = 0.050743;
+    double TOLERANCE = 0.0001;
     State state1 = context.getState(State::Energy);
     double RMSDPlusCV = state1.getPotentialEnergy();
-    ASSERT(RMSDPlusCV <= estimate);
-    cout << "estimate:" << estimate << "\n";
-    cout << "RMSDPlusCV:" << RMSDPlusCV << "\n";
-    ASSERT(RMSDPlusCV > 0.8*estimate);
+    ASSERT(RMSDPlusCV < expected_rmsd + TOLERANCE);
+    ASSERT(RMSDPlusCV > expected_rmsd - TOLERANCE);
 
     // Translate and rotate all the particles.  This should have no effect on the RMSDCV.
 
@@ -158,7 +187,7 @@ void testRMSDCV() {
 int main() {
     try {
         registerRMSDPlusReferenceKernelFactories();
-        testRMSDCV();
+        testRMSDPlusCV();
     }
     catch(const std::exception& e) {
         std::cout << "exception: " << e.what() << std::endl;

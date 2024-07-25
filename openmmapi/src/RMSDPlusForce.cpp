@@ -42,14 +42,12 @@ using namespace std;
 RMSDPlusForce::RMSDPlusForce(const vector<Vec3>& referencePositions,
 		                     const vector<int>& alignParticles,
 							 const vector<int>& rmsdParticles) {
-	cout << "init\n";
 	setReferencePositions(referencePositions);
 	setAlignParticles(alignParticles);
 	setRMSDParticles(rmsdParticles);
 }
 
 void RMSDPlusForce::setAlignParticles(const vector<int>& particles) {
-	cout << "setAlignParticles\n";
     alignParticles = particles;
 }
 
