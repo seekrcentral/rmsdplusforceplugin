@@ -244,7 +244,8 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
     //b[9] = RMSDCV;
     
     // Create a kernel that will compute the RMSD of the rmsdParticles
-    
+    kernel2->setArg(0, numRMSDParticles);
+    kernel2->execute(numRMSDParticles);
     buffer.download(b);
     double RMSD = b[9];
     
