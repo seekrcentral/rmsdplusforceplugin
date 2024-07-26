@@ -50,12 +50,12 @@ public:
     }
     void updateBothParticles() {
         alignParticles.clear();
-        for (int i=0; force.getNumAlignParticles(); i++) {
+        for (int i=0;  i < force.getNumAlignParticles(); i++) {
         	int alignParticle;
         	force.getRMSDPlusAlignParameters(i, alignParticle);
             alignParticles.insert(alignParticle);
         }
-        for (int i=0; force.getNumRMSDParticles(); i++) {
+        for (int i=0; i < force.getNumRMSDParticles(); i++) {
 			int rmsdParticle;
 			force.getRMSDPlusRMSDParameters(i, rmsdParticle);
 			rmsdParticles.insert(rmsdParticle);
@@ -103,9 +103,9 @@ void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDP
 	map<string, string> defines;
 	defines["THREAD_BLOCK_SIZE"] = cc.intToString(blockSize);
 	ComputeProgram program = cc.compileProgram(CommonRMSDPlusKernelSources::RMSDPlusForce, defines);
-	kernel1 = program->createKernel("computeRMSDPlusPart1");
-	kernel2 = program->createKernel("computeRMSDPlusPart2");
-	kernel3 = program->createKernel("computeRMSDPlusForces");
+	kernel1 = program->createKernel("computeRMSDPart1");
+	kernel2 = program->createKernel("computeRMSDPart2");
+	kernel3 = program->createKernel("computeRMSDForces");
 	
 	kernel1->addArg();
 	kernel1->addArg(cc.getPosq());

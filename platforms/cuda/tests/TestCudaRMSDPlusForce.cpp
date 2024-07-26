@@ -70,7 +70,6 @@ double estimateRMSDPlusCV(vector<OpenMM::Vec3>& positions, vector<OpenMM::Vec3>&
 }
 
 void testRMSDPlusCV() {
-    cout << "mark0\n";
     Platform& platform = Platform::getPlatformByName("CUDA");
     const int numParticles = 20;
     System system;
@@ -128,7 +127,6 @@ void testRMSDPlusCV() {
 
     // TODO; remove
     double estimate = estimateRMSDPlusCV(positions, referencePos, alignParticles, rmsdParticles);
-    cout << "mark50\n";
     // Have the force compute the RMSDPlusCV.  It should be very slightly less than
     // what we calculated above (since that omitted the rotation).
     double expected_rmsd = 0.050743;
@@ -182,7 +180,6 @@ void testRMSDPlusCV() {
     ASSERT_EQUAL_TOL(0.0, context.getState(State::Energy).getPotentialEnergy(), 1e-2);
     context.setPositions(referencePos);
     ASSERT_EQUAL_TOL(RMSDPlusCV, context.getState(State::Energy).getPotentialEnergy(), 1e-4);
-    cout << "mark100\n";
 }
 
 int main() {
