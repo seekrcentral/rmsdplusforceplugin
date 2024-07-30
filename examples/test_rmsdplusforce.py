@@ -29,15 +29,15 @@ system.addForce(cv_force)
 
 # Create a Langevin integrator for constant temperature.
 integrator = LangevinIntegrator(300.0*kelvin, 1/picosecond, 0.002*picoseconds)
-platform = Platform.getPlatformByName("Reference")
-simulation = Simulation(prmtop.topology, system, integrator, platform=platform,
-                        platformProperties=None)
+#platform = Platform.getPlatformByName("Reference")
+#simulation = Simulation(prmtop.topology, system, integrator, platform=platform,
+#                        platformProperties=None)
 
 # Uncomment the following line to create a simulation that uses one of the GPUs.
-#platform = Platform.getPlatformByName('CUDA')
-#properties = {'CudaDeviceIndex': '0', 'CudaPrecision': 'mixed'}
-#simulation = Simulation(prmtop.topology, system, integrator, platform, 
-#                        properties)
+platform = Platform.getPlatformByName('CUDA')
+properties = {'CudaDeviceIndex': '0', 'CudaPrecision': 'mixed'}
+simulation = Simulation(prmtop.topology, system, integrator, platform,
+                        properties)
 
 # Assign atomic positions
 simulation.context.setPositions(inpcrd.positions)
@@ -54,8 +54,8 @@ simulation.minimizeEnergy()
 
 # Create another reporter to display system info as the simulation runs.
 simulation.reporters.append(StateDataReporter(
-    stdout, 1, step=True, potentialEnergy=True, temperature=True, 
+    stdout, 10, step=True, potentialEnergy=True, temperature=True,
     volume=True))
 
 # Advance time by 10000 timesteps (40 picoseconds for Langevin integrator).
-simulation.step(10)
+simulation.step(10000)

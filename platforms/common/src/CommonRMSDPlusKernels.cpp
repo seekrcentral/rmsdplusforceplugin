@@ -242,13 +242,7 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
     
     //double RMSDCV = sqrt(msd);
     //b[9] = RMSDCV;
-    
-    // Create a kernel that will compute the RMSD of the rmsdParticles
-    kernel2->setArg(0, numRMSDParticles);
-    kernel2->execute(numRMSDParticles);
-    buffer.download(b);
-    double RMSD = b[9];
-    
+
     // Compute the rotation matrix.
 
     double q[] = {vectors[0][3], vectors[1][3], vectors[2][3], vectors[3][3]};
@@ -269,13 +263,21 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
     // Upload it to the device and invoke the kernel to apply forces.
     
     buffer.upload(b);
+
+    // Create a kernel that will compute the RMSD of the rmsdParticles
+    kernel2->setArg(0, numRMSDParticles);
+    kernel2->execute(numRMSDParticles);
+    buffer.download(b);
+    double RMSD = b[9];
+
     kernel3->setArg(0, numRMSDParticles);
     kernel3->execute(numRMSDParticles);
     return RMSD;
 }
 
-
+//TO DO: clean up and refer back to record Parameters
 void CommonCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context, const RMSDPlusForce& force) {
+    ContextSelector selector(cc);
     vector<int> alignParticleVec;
     int numAlignParticles = force.getNumAlignParticles();
     if (numAlignParticles == 0)
@@ -321,6 +323,9 @@ void CommonCalcRMSDPlusForceKernel::copyParametersToContext(ContextImpl& context
         Vec3 p = centeredPositions[i];
         sumNormRef += p.dot(p);
     }
-    
+
+    info->updateBothParticles();
+    cc.invalidateMolecules(info);
+
 }
 

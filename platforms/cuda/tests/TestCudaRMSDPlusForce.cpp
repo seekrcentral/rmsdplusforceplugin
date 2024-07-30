@@ -126,7 +126,6 @@ void testRMSDPlusCV() {
     context.setPositions(positions);
 
     // TODO; remove
-    double estimate = estimateRMSDPlusCV(positions, referencePos, alignParticles, rmsdParticles);
     // Have the force compute the RMSDPlusCV.  It should be very slightly less than
     // what we calculated above (since that omitted the rotation).
     double expected_rmsd = 0.050743;

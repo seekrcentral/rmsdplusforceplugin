@@ -90,9 +90,12 @@ KERNEL void computeRMSDPart2(int numRMSDParticles,
         int index = rmsdParticles[i];
         real3 pos = trimTo3(posq[index]) - center;
         real3 refPos = trimTo3(referencePos[index]);
-        sum += (pos.x - refPos.x)*(pos.x - refPos.x);
-        sum += (pos.y - refPos.y)*(pos.y - refPos.y);
-        sum += (pos.z - refPos.z)*(pos.z - refPos.z);
+        real3 rotatedRef = make_real3(buffer[0]*refPos.x + buffer[3]*refPos.y + buffer[6]*refPos.z,
+                                      buffer[1]*refPos.x + buffer[4]*refPos.y + buffer[7]*refPos.z,
+                                      buffer[2]*refPos.x + buffer[5]*refPos.y + buffer[8]*refPos.z);
+        sum += (pos.x - rotatedRef.x)*(pos.x - rotatedRef.x);
+        sum += (pos.y - rotatedRef.y)*(pos.y - rotatedRef.y);
+        sum += (pos.z - rotatedRef.z)*(pos.z - rotatedRef.z);
     }
     sum = reduceValue(sum, temp);
     
