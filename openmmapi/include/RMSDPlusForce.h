@@ -37,6 +37,7 @@
 #include "openmm/Vec3.h"
 #include <vector>
 #include "internal/windowsExportRMSDPlusForce.h"
+#include <iostream>
 
 using namespace OpenMM;
 namespace RMSDPlusForcePlugin {
@@ -97,9 +98,7 @@ public:
     
     void updateParametersInContext(OpenMM::Context& context);
     
-    bool usesPeriodicBoundaryConditions() const {
-        return false;
-    }
+    bool usesPeriodicBoundaryConditions() const;
     
 protected:
     OpenMM::ForceImpl* createImpl() const;

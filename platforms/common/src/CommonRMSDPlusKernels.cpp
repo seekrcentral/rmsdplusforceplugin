@@ -37,11 +37,30 @@
 #include "openmm/internal/ContextImpl.h"
 #include "jama_eig.h"
 #include <set>
+#include <vector_functions.h>
 
 using namespace RMSDPlusForcePlugin;
 using namespace OpenMM;
 using namespace std;
 
+static void setPeriodicBoxArgs(ComputeContext& cc, ComputeKernel kernel, int index) {
+    Vec3 a, b, c;
+    cc.getPeriodicBoxVectors(a, b, c);
+    if (cc.getUseDoublePrecision()) {
+        kernel->setArg(index++, mm_double4(a[0], b[1], c[2], 0.0));
+        kernel->setArg(index++, mm_double4(1.0/a[0], 1.0/b[1], 1.0/c[2], 0.0));
+        kernel->setArg(index++, mm_double4(a[0], a[1], a[2], 0.0));
+        kernel->setArg(index++, mm_double4(b[0], b[1], b[2], 0.0));
+        kernel->setArg(index, mm_double4(c[0], c[1], c[2], 0.0));
+    }
+    else {
+        kernel->setArg(index++, mm_float4((float) a[0], (float) b[1], (float) c[2], 0.0f));
+        kernel->setArg(index++, mm_float4(1.0f/(float) a[0], 1.0f/(float) b[1], 1.0f/(float) c[2], 0.0f));
+        kernel->setArg(index++, mm_float4((float) a[0], (float) a[1], (float) a[2], 0.0f));
+        kernel->setArg(index++, mm_float4((float) b[0], (float) b[1], (float) b[2], 0.0f));
+        kernel->setArg(index, mm_float4((float) c[0], (float) c[1], (float) c[2], 0.0f));
+    }
+}
 
 class CommonCalcRMSDPlusForceKernel::ForceInfo : public ComputeForceInfo {
 public:
@@ -74,8 +93,7 @@ private:
 
 void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDPlusForce& force) {
     // Create data structures.
-
-	ContextSelector selector(cc);
+    ContextSelector selector(cc);
 	bool useDouble = cc.getUseDoublePrecision();
 	int elementSize = (useDouble ? sizeof(double) : sizeof(float));
 	int numAlignParticles = force.getNumAlignParticles();
@@ -97,7 +115,7 @@ void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDP
 	recordParameters(force);
     info = new ForceInfo(force);
 	cc.addForce(info);
-
+	
 	// Create the kernels.
 	blockSize = min(256, cc.getMaxThreadBlockSize());
 	map<string, string> defines;
@@ -108,17 +126,37 @@ void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDP
 	kernel3 = program->createKernel("computeRMSDForces");
 	
 	kernel1->addArg();
+	//kernel1->addArg();
+	/*
+	kernel1->addArg();
+	kernel1->addArg();
+	kernel1->addArg();
+	kernel1->addArg();
+	kernel1->addArg();
+	*/
 	kernel1->addArg(cc.getPosq());
 	kernel1->addArg(referencePos);
 	kernel1->addArg(alignParticles);
 	kernel1->addArg(buffer);
 	
 	kernel2->addArg();
+	kernel2->addArg();
+    kernel2->addArg();
+    kernel2->addArg();
+    kernel2->addArg();
+    kernel2->addArg();
+    kernel2->addArg();
     kernel2->addArg(cc.getPosq());
     kernel2->addArg(referencePos);
     kernel2->addArg(rmsdParticles);
     kernel2->addArg(buffer);
-	
+    
+	kernel3->addArg();
+	kernel3->addArg();
+	kernel3->addArg();
+	kernel3->addArg();
+	kernel3->addArg();
+	kernel3->addArg();
 	kernel3->addArg();
 	kernel3->addArg(cc.getPaddedNumAtoms());
 	kernel3->addArg(cc.getPosq());
@@ -126,6 +164,7 @@ void CommonCalcRMSDPlusForceKernel::initialize(const System& system, const RMSDP
 	kernel3->addArg(rmsdParticles);
 	kernel3->addArg(buffer);
 	kernel3->addArg(cc.getLongForceBuffer());
+	
 }
 
 void CommonCalcRMSDPlusForceKernel::recordParameters(const RMSDPlusForce& force) {
@@ -178,6 +217,12 @@ void CommonCalcRMSDPlusForceKernel::recordParameters(const RMSDPlusForce& force)
         Vec3 p = centeredPositions[i];
         sumNormRef += p.dot(p);
     }
+    use_periodic = true;
+    //if (force.usesPeriodicBoundaryConditions()) {
+    //    defines["USE_PERIODIC"] = "1";
+    //} else {
+    //    defines["USE_PERIODIC"] = "0";
+    //}
 }
 
 double CommonCalcRMSDPlusForceKernel::execute(ContextImpl& context, bool includeForces, bool includeEnergy) {
@@ -193,7 +238,28 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
 
     int numAlignParticles = alignParticles.getSize();
     int numRMSDParticles = rmsdParticles.getSize();
+    
+    Vec3 a_vec; Vec3 b_vec; Vec3 c_vec;
+    context.getPeriodicBoxVectors(a_vec, b_vec, c_vec);
+    
+    periodicBoxVecX = make_double4(a_vec[0], a_vec[1], a_vec[2], 0.0);
+    periodicBoxVecY = make_double4(b_vec[0], b_vec[1], b_vec[2], 0.0);
+    periodicBoxVecZ = make_double4(c_vec[0], c_vec[1], c_vec[2], 0.0);
+    periodicBoxSize = make_double4(a_vec[0], b_vec[1], c_vec[2], 0.0);
+    invPeriodicBoxSize = make_double4(1.0/a_vec[0], 1.0/b_vec[1], 1.0/c_vec[2], 0.0);
+    
+    /*
+    cout << "periodicBoxVecX x: " << periodicBoxVecX.x << " y: " << periodicBoxVecX.y << " z: " << periodicBoxVecX.z << "\n";
+    cout << "periodicBoxVecY x: " << periodicBoxVecY.x << " y: " << periodicBoxVecY.y << " z: " << periodicBoxVecY.z << "\n";
+    cout << "periodicBoxVecZ x: " << periodicBoxVecZ.x << " y: " << periodicBoxVecZ.y << " z: " << periodicBoxVecZ.z << "\n";
+    cout << "periodicBoxSize x: " << periodicBoxSize.x << " y: " << periodicBoxSize.y << " z: " << periodicBoxSize.z << "\n";
+    cout << "invPeriodicBoxSize x: " << invPeriodicBoxSize.x << " y: " << invPeriodicBoxSize.y << " z: " << invPeriodicBoxSize.z << "\n";
+    */
+    
+    
     kernel1->setArg(0, numAlignParticles);
+    //kernel1->setArg(1, use_periodic);
+    //setPeriodicBoxArgs(cc, kernel1, 2);
     kernel1->execute(blockSize, blockSize);
     
     // Download the results, build the F matrix, and find the maximum eigenvalue
@@ -203,7 +269,14 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
     buffer.download(b);
 
     // JAMA::Eigenvalue may run into an infinite loop if we have any NaN
+    /*
+    cout << "b[9]:" << b[9] << "\n";
+    cout << "b[10]:" << b[10] << "\n";
+    cout << "b[11]:" << b[11] << "\n";
+    cout << "b[12]:" << b[12] << "\n";
+    */
     for (int i = 0; i < 9; i++) {
+        //cout << "b[" << i << "]: " << b[i] << "\n";
         if (b[i] != b[i])
             throw OpenMMException("NaN encountered during RMSDPlus force calculation");
     }
@@ -231,34 +304,45 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
     Array2D<double> vectors;
     eigen.getV(vectors);
 
+    //throw OpenMMException("Stopping");
+    
     // Compute the RMSD.
     
     double align_msd = (sumNormRef+b[9]-2*values[3])/numAlignParticles;
     if (align_msd < 1e-20) {
         // The particles are perfectly aligned, so all the forces should be zero.
         // Numerical error can lead to NaNs, so just return 0 now.
-        return 0.0;
-    }
+        b[0] = 1; 
+        b[1] = 0;
+        b[2] = 0;
+        b[3] = 0;
+        b[4] = 1; 
+        b[5] = 0;
+        b[6] = 0;
+        b[7] = 0;
+        b[8] = 1; 
+    } else {
     
-    //double RMSDCV = sqrt(msd);
-    //b[9] = RMSDCV;
+        //double RMSDCV = sqrt(msd);
+        //b[9] = RMSDCV;
 
-    // Compute the rotation matrix.
+        // Compute the rotation matrix.
 
-    double q[] = {vectors[0][3], vectors[1][3], vectors[2][3], vectors[3][3]};
-    double q00 = q[0]*q[0], q01 = q[0]*q[1], q02 = q[0]*q[2], q03 = q[0]*q[3];
-    double q11 = q[1]*q[1], q12 = q[1]*q[2], q13 = q[1]*q[3];
-    double q22 = q[2]*q[2], q23 = q[2]*q[3];
-    double q33 = q[3]*q[3];
-    b[0] = q00+q11-q22-q33;
-    b[1] = 2*(q12-q03);
-    b[2] = 2*(q13+q02);
-    b[3] = 2*(q12+q03);
-    b[4] = q00-q11+q22-q33;
-    b[5] = 2*(q23-q01);
-    b[6] = 2*(q13-q02);
-    b[7] = 2*(q23+q01);
-    b[8] = q00-q11-q22+q33;
+        double q[] = {vectors[0][3], vectors[1][3], vectors[2][3], vectors[3][3]};
+        double q00 = q[0]*q[0], q01 = q[0]*q[1], q02 = q[0]*q[2], q03 = q[0]*q[3];
+        double q11 = q[1]*q[1], q12 = q[1]*q[2], q13 = q[1]*q[3];
+        double q22 = q[2]*q[2], q23 = q[2]*q[3];
+        double q33 = q[3]*q[3];
+        b[0] = q00+q11-q22-q33;
+        b[1] = 2*(q12-q03);
+        b[2] = 2*(q13+q02);
+        b[3] = 2*(q12+q03);
+        b[4] = q00-q11+q22-q33;
+        b[5] = 2*(q23-q01);
+        b[6] = 2*(q13-q02);
+        b[7] = 2*(q23+q01);
+        b[8] = q00-q11-q22+q33;
+    }
 
     // Upload it to the device and invoke the kernel to apply forces.
     
@@ -266,11 +350,17 @@ double CommonCalcRMSDPlusForceKernel::executeImpl(OpenMM::ContextImpl& context) 
 
     // Create a kernel that will compute the RMSD of the rmsdParticles
     kernel2->setArg(0, numRMSDParticles);
+    kernel2->setArg(1, use_periodic);
+    setPeriodicBoxArgs(cc, kernel2, 2);
     kernel2->execute(numRMSDParticles);
     buffer.download(b);
     double RMSD = b[9];
+    //cout << "RMSD: " << RMSD << "\n";
+    //throw OpenMMException("Stopping");
 
     kernel3->setArg(0, numRMSDParticles);
+    kernel3->setArg(1, use_periodic);
+    setPeriodicBoxArgs(cc, kernel3, 2);
     kernel3->execute(numRMSDParticles);
     return RMSD;
 }
