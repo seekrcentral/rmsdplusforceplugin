@@ -63,11 +63,11 @@ void RMSDPlusForce::getRMSDPlusAlignParameters(int index, int& particle) const {
 	particle = alignParticles[index];
 }
 
-void RMSDPlusForce::getRMSDPlusRMSDParameters(int index, int& particle) const{
+void RMSDPlusForce::getRMSDPlusRMSDParameters(int index, int& particle) const {
 	particle = rmsdParticles[index];
 }
 
-void RMSDPlusForce::getRMSDPlusReferencePosition(int index, Vec3& position) const{
+void RMSDPlusForce::getRMSDPlusReferencePosition(int index, Vec3& position) const {
 	position = referencePositions[index];
 }
 
@@ -77,4 +77,8 @@ ForceImpl* RMSDPlusForce::createImpl() const {
 
 void RMSDPlusForce::updateParametersInContext(Context& context) {
     dynamic_cast<RMSDPlusForceImpl&>(getImplInContext(context)).updateParametersInContext(getContextImpl(context));
+}
+
+bool RMSDPlusForce::usesPeriodicBoundaryConditions() const {
+    return true;
 }

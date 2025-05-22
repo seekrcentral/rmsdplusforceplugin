@@ -35,6 +35,7 @@
 #include "RMSDPlusKernels.h"
 #include "openmm/common/ComputeContext.h"
 #include "openmm/common/ComputeArray.h"
+#include <builtin_types.h>
 
 namespace RMSDPlusForcePlugin {
 
@@ -95,6 +96,8 @@ private:
 	int blockSize;
 	double sumNormRef;
 	ComputeArray referencePos, alignParticles, rmsdParticles, buffer;
+	bool use_periodic;
+	double4 periodicBoxVecX, periodicBoxVecY, periodicBoxVecZ, periodicBoxSize, invPeriodicBoxSize;
 	ComputeKernel kernel1, kernel2, kernel3;
 };
 
